@@ -1,5 +1,6 @@
 package net.consler.librelauncherlib;
 
+import net.consler.librelauncherlib.auth.AuthProfile;
 import net.consler.librelauncherlib.download.MinecraftInstaller;
 import net.consler.librelauncherlib.launch.LaunchProfile;
 import net.consler.librelauncherlib.launch.MinecraftLauncher;
@@ -27,9 +28,12 @@ public final class LibreLauncherLib
 
     /**
      * Launches Minecraft for with the launch profile.
+     * @param launchProfile The LaunchProfile to use.
+     * @param authProfile The AuthProfile to use.
+     * @return The process running the Minecraft instance.
      */
-    public static Process launch(LaunchProfile profile)
+    public static Process launch(LaunchProfile launchProfile, AuthProfile authProfile)
     {
-        return new MinecraftLauncher().launch(profile);
+        return new MinecraftLauncher().launch(launchProfile, authProfile);
     }
 }
