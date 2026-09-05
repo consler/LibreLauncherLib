@@ -3,28 +3,22 @@ package net.consler.librelauncherlib.launch;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
-public record LaunchProfile(String username, String uuid, String accessToken, int ramMb, String version, String launcherName, String launcherVersion, Path gameDir, List<String> extraJvmArgs, Path javaPath)
+public record LaunchProfile(int ramMb, String version, String launcherName, String launcherVersion, Path gameDir, List<String> extraJvmArgs, Path javaPath)
 {
     public static class Builder
     {
-        private final String username;
         private final String version;
 
         private final Path gameDir;
-
-        private String uuid = String.valueOf(UUID.randomUUID());
-        private String accessToken = "0";
         private int ramMb = 2048;
-        private String launcherName = "LibreLauncher";
+        private String launcherName = "LibreLauncherLib";
         private String launcherVersion = "1.0";
         private Path javaPath = Path.of(System.getProperty("java.home"), "bin", System.getProperty("os.name").toLowerCase().contains("win") ? "java.exe" : "java");
         private final List<String> extraJvmArgs = new ArrayList<>();
 
-        public Builder(String username, String version, Path gameDir)
+        public Builder(String version, Path gameDir)
         {
-            this.username = username;
             this.version = version;
             this.gameDir = gameDir;
         }
@@ -35,24 +29,6 @@ public record LaunchProfile(String username, String uuid, String accessToken, in
         public Builder withRamMb(int ramMb)
         {
             this.ramMb = ramMb;
-            return this;
-        }
-
-        /**
-         * Overrides the generated player UUID used by the game launcher.
-         */
-        public Builder withUuid(String uuid)
-        {
-            this.uuid = uuid;
-            return this;
-        }
-
-        /**
-         * Sets the authenticated access token supplied to the Minecraft JVM arguments.
-         */
-        public Builder withAccessToken(String accessToken)
-        {
-            this.accessToken = accessToken;
             return this;
         }
 
@@ -97,7 +73,7 @@ public record LaunchProfile(String username, String uuid, String accessToken, in
          */
         public LaunchProfile build()
         {
-            return new LaunchProfile(username, uuid, accessToken, ramMb, version, launcherName, launcherVersion, gameDir, extraJvmArgs, javaPath);
+            return new LaunchProfile(ramMb, version, launcherName, launcherVersion, gameDir, extraJvmArgs, javaPath);
         }
     }
 }

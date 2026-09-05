@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import net.consler.librelauncherlib.auth.AuthProfile;
 import net.consler.librelauncherlib.utill.SystemHelper;
 
 import java.io.File;
@@ -21,15 +22,15 @@ public class MinecraftLauncher
     /**
      * Launches a Minecraft game process for the supplied profile.
      *
-     * @param profile launch configuration
+     * @param launchProfile launch configuration
      * @return the started game process
      */
-    public Process launch(LaunchProfile profile)
+    public Process launch(LaunchProfile launchProfile, AuthProfile authProfile)
     {
         try
         {
-            Path gameDir = profile.gameDir();
-            String version = profile.version();
+            Path gameDir = launchProfile.gameDir();
+            String version = launchProfile.version();
 
             Path versionJsonPath = gameDir.resolve(version + ".json");
             Path nativesDir = gameDir.resolve("natives");
@@ -44,25 +45,25 @@ public class MinecraftLauncher
             String classPath = buildClassPath(versionDetails.getAsJsonArray("libraries"), gameDir, gameDir, version);
 
             Map<String, String> args = new HashMap<>();
-            args.put("${auth_player_name}", profile.username());
+            args.put("${auth_player_name}", authProfile.username());
             args.put("${version_name}", version);
             args.put("${game_directory}", gameDir.toAbsolutePath().toString());
             args.put("${assets_root}", assetsDir.toAbsolutePath().toString());
             args.put("${assets_index_name}", assetIndex);
-            args.put("${auth_uuid}", profile.uuid());
-            args.put("${auth_access_token}", profile.accessToken());
+            args.put("${auth_uuid}", authProfile.uuid());
+            args.put("${auth_access_token}", authProfile.accessToken());
             args.put("${user_properties}", "{}");
             args.put("${user_type}", "msa");
             args.put("${version_type}", "release");
             args.put("${natives_directory}", nativesDir.toAbsolutePath().toString());
-            args.put("${launcher_name}", profile.launcherName());
-            args.put("${launcher_version}", profile.launcherVersion());
+            args.put("${launcher_name}", launchProfile.launcherName());
+            args.put("${launcher_version}", launchProfile.launcherVersion());
             args.put("${classpath}", classPath);
 
             List<String> command = new ArrayList<>();
-            command.add(profile.javaPath().toAbsolutePath().toString());
-            command.add("-Xmx" + profile.ramMb() + "M");
-            command.add("-Xms" + profile.ramMb() + "M");
+            command.add(launchProfile.javaPath().toAbsolutePath().toString());
+            command.add("-Xmx" + launchProfile.ramMb() + "M");
+            command.add("-Xms" + launchProfile.ramMb() + "M");
             command.addAll(parseArguments(versionDetails, "jvm", args));
             command.add(mainClass);
             command.addAll(parseArguments(versionDetails, "game", args));
@@ -79,7 +80,7 @@ public class MinecraftLauncher
         catch (Exception e)
         {
             if (e instanceof net.consler.librelauncherlib.exception.LibraryException) throw (net.consler.librelauncherlib.exception.LibraryException) e;
-            throw new net.consler.librelauncherlib.exception.LaunchException("Failed to launch Minecraft for version " + profile.version(), e);
+            throw new net.consler.librelauncherlib.exception.LaunchException("Failed to launch Minecraft for version " + launchProfile.version(), e);
         }
     }
     private String buildClassPath(JsonArray libraries, Path gameDir, Path versionsDir, String versionId)
