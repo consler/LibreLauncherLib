@@ -36,6 +36,11 @@ public class Quilt
             throw new ListVersionsFailureException(e.getMessage());
         }
     }
+    /**
+     * Returns a list of all available Quilt versions.
+     *
+     * @return List of Quilt versions
+     */
 
     public static List<String> getVersions()
     {
@@ -46,12 +51,21 @@ public class Quilt
         }
         return versions;
     }
+    /**
+     * Clears cached versions. Useful if the version list needs to be refreshed (e.g. a new version came out).
+     */
 
     public static void clearCachedVersions()
     {
         cachedVersionManifest = null;
     }
 
+    /**
+     * Returns a list of Quilt versions compatible with the specified Minecraft version.
+     *
+     * @param minecraftVersion Minecraft version for which to find compatible Quilt versions
+     * @return A list of compatible Quilt versions
+     */
     public static List<String> getVersionsCompatibleWith(String minecraftVersion)
     {
         String versionSpecificMetadataUrl = METADATA_URL + "/" + minecraftVersion;

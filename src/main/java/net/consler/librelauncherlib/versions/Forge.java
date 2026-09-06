@@ -50,16 +50,31 @@ public class Forge
         }
     }
 
+    /**
+     * Returns a list of all available Forge versions.
+     *
+     * @return List of Forge versions
+     */
     public static List<String> getVersions()
     {
         return getVersionManifest().reversed();
     }
+
+    /**
+     * Clears cached versions. Useful if the version list needs to be refreshed (e.g. a new version came out).
+     */
 
     public static void clearCachedVersions()
     {
         cachedVersions = null;
     }
 
+    /**
+     * Returns a list of Forge versions compatible with the specified Minecraft version.
+     *
+     * @param minecraftVersion Minecraft version for which to find compatible Forge versions
+     * @return A list of compatible Forge versions
+     */
     public static List<String> getVersionsCompatibleWith(String minecraftVersion)
     {
         List<String> versions = new ArrayList<>();

@@ -37,6 +37,12 @@ public class Fabric
         }
     }
 
+    /**
+     * Returns a list of all available Fabric versions.
+     *
+     * @return List of Fabric versions
+     */
+
     public static List<String> getVersions()
     {
         List<String> versions = new ArrayList<>();
@@ -47,11 +53,20 @@ public class Fabric
         return versions;
     }
 
+    /**
+     * Clears cached versions. Useful if the version list needs to be refreshed (e.g. a new version came out).
+     */
     public static void clearCachedVersions()
     {
         cachedVersionManifest = null;
     }
 
+    /**
+     * Returns a list of Fabric versions compatible with the specified Minecraft version.
+     *
+     * @param minecraftVersion Minecraft version for which to find compatible Fabric versions
+     * @return A list of compatible Fabric versions
+     */
     public static List<String> getVersionsCompatibleWith(String minecraftVersion)
     {
         String versionSpecificMetadataUrl = METADATA_URL + "/" + minecraftVersion;
