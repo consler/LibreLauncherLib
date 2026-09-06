@@ -1,4 +1,4 @@
-package net.consler.librelauncherlib.download;
+package net.consler.librelauncherlib.install;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -34,7 +34,7 @@ class DownloadManager
                 .connectTimeout(Duration.ofSeconds(10))
                 .build();
 
-        int threads = Math.min(12, Math.max(2, Runtime.getRuntime().availableProcessors() * 2));
+        int threads = Math.clamp(Runtime.getRuntime().availableProcessors() * 2L, 2, 12);
         this.downloadExecutor = Executors.newFixedThreadPool(threads);
         this.downloadLimiter = new Semaphore(Math.max(4, threads / 2));
     }
@@ -95,12 +95,12 @@ class DownloadManager
                 }
             }
 
-            throw new net.consler.librelauncherlib.exception.DownloadFailedException("Failed to download after " + maxRetries + " attempts: " + url, lastException);
+            throw new net.consler.librelauncherlib.exception.DownloadFailedException("Failed to install after " + maxRetries + " attempts: " + url, lastException);
         }
         catch (Exception e)
         {
             if (e instanceof net.consler.librelauncherlib.exception.LibraryException) throw (net.consler.librelauncherlib.exception.LibraryException) e;
-            throw new net.consler.librelauncherlib.exception.LibraryException("Failed to download from " + url, e);
+            throw new net.consler.librelauncherlib.exception.LibraryException("Failed to install from " + url, e);
         }
     }
 
@@ -120,7 +120,7 @@ class DownloadManager
                 }
                 catch (Exception e)
                 {
-                    System.err.println("Failed to download: " + task.url());
+                    System.err.println("Failed to install: " + task.url());
                 }
                 finally
                 {
