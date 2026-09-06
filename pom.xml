@@ -11,7 +11,23 @@
 
     <name>LibreLauncherLib</name>
     <description>Java library for downloading and launching Minecraft.</description>
-    <url>https://github.com/Consler/LibreLauncherLib</url>
+    <url>https://github.com/consler/LibreLauncherLib</url>
+
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>https://opensource.org/license/mit</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Consler</name>
+            <organization>Consler</organization>
+            <organizationUrl>https://github.com/consler</organizationUrl>
+        </developer>
+    </developers>
 
     <properties>
         <maven.compiler.release>25</maven.compiler.release>
