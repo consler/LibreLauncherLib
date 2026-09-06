@@ -1,4 +1,4 @@
-package net.consler.librelauncherlib.download;
+package net.consler.librelauncherlib.install;
 
 import net.consler.librelauncherlib.exception.NativesExtractionException;
 

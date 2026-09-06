@@ -1,4 +1,4 @@
-package net.consler.librelauncherlib.download;
+package net.consler.librelauncherlib.install;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;

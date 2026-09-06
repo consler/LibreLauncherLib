@@ -1,7 +1,7 @@
 package net.consler.librelauncherlib;
 
 import net.consler.librelauncherlib.auth.AuthProfile;
-import net.consler.librelauncherlib.download.MinecraftInstaller;
+import net.consler.librelauncherlib.install.MinecraftInstaller;
 import net.consler.librelauncherlib.launch.LaunchProfile;
 import net.consler.librelauncherlib.launch.MinecraftLauncher;
 import net.consler.librelauncherlib.versions.Forge;
@@ -17,12 +17,12 @@ public class Main
     {
         switch (args[0])
         {
-            case "download" -> download();
+            case "install" -> install();
             case "run" -> run();
             case "list" -> listVersions();
         }
     }
-    private static void download()
+    private static void install()
     {
         MinecraftInstaller installer = new MinecraftInstaller();
         installer.install(version, gameDir);
