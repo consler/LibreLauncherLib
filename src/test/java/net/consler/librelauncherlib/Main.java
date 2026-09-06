@@ -38,6 +38,6 @@ public class Main
 
     private static void listVersions()
     {
-        System.out.println(Forge.getVersionsCompatibleWith("26.4"));
+        System.out.println(Forge.getVersionsCompatibleWith("26.2"));
     }
 }
