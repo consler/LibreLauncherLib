@@ -50,16 +50,32 @@ public class Neoforge
         }
     }
 
+    /**
+     * Returns a list of all available Neoforge versions.
+     *
+     * @return List of Neoforge versions
+     */
+
     public static List<String> getVersions()
     {
         return getVersionManifest().reversed();
     }
+
+    /**
+     * Clears cached versions. Useful if the version list needs to be refreshed (e.g. a new version came out).
+     */
 
     public static void clearCachedVersions()
     {
         cachedVersions = null;
     }
 
+    /**
+     * Returns a list of Neoforge versions compatible with the specified Minecraft version.
+     *
+     * @param minecraftVersion Minecraft version for which to find compatible Neoforge versions
+     * @return A list of compatible Neoforge versions
+     */
     public static List<String> getVersionsCompatibleWith(String minecraftVersion)
     {
         List<String> versions = new ArrayList<>();

@@ -33,6 +33,11 @@ public class Vanilla
             throw new ListVersionsFailureException(e.getMessage());
         }
     }
+    /**
+     * Returns a list of all available Minecraft versions.
+     *
+     * @return List of Minecraft versions
+     */
 
     public static List<String> getVersions()
     {
@@ -56,6 +61,12 @@ public class Vanilla
         return versionsMap;
     }
 
+    /**
+     * Returns a list of Minecraft versions filtered by type.
+     *
+     * @param type Type of versions to include (e.g. release, snapshot, old_beta, old_alpha)
+     * @return List of filtered Minecraft versions
+     */
     public static List<String> getVersionsFiltered(String type)
     {
         List<String> filteredVersions = new ArrayList<>();
@@ -70,6 +81,9 @@ public class Vanilla
 
         return filteredVersions;
     }
+    /**
+     * Clears cached versions. Useful if the version list needs to be refreshed (e.g. a new version came out).
+     */
 
     public static void clearCachedVersions()
     {
