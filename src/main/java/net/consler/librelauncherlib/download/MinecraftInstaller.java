@@ -3,6 +3,9 @@ package net.consler.librelauncherlib.download;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import net.consler.librelauncherlib.exception.InstallationException;
+import net.consler.librelauncherlib.exception.LibraryException;
+import net.consler.librelauncherlib.exception.VersionNotFoundException;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -68,8 +71,8 @@ public class MinecraftInstaller
         }
         catch (Exception e)
         {
-            if (e instanceof net.consler.librelauncherlib.exception.LibraryException) throw (net.consler.librelauncherlib.exception.LibraryException) e;
-            throw new net.consler.librelauncherlib.exception.InstallationException("Failed to install Minecraft version " + version, e);
+            if (e instanceof LibraryException) throw (LibraryException) e;
+            throw new InstallationException("Failed to install Minecraft version " + version, e);
         }
     }
 
@@ -84,6 +87,6 @@ public class MinecraftInstaller
                 return v.get("url").getAsString();
             }
         }
-        throw new net.consler.librelauncherlib.exception.VersionNotFoundException("Version not found: " + versionId);
+        throw new VersionNotFoundException("Version not found: " + versionId);
     }
 }
