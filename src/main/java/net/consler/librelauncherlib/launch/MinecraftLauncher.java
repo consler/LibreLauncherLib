@@ -5,6 +5,10 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.consler.librelauncherlib.auth.AuthProfile;
+import net.consler.librelauncherlib.exception.LaunchException;
+import net.consler.librelauncherlib.exception.LibraryException;
+import net.consler.librelauncherlib.modloader.ModloaderProfile;
+import net.consler.librelauncherlib.utill.MavenHelper;
 import net.consler.librelauncherlib.utill.SystemHelper;
 
 import java.io.File;
@@ -25,7 +29,7 @@ public class MinecraftLauncher
      * @param launchProfile launch configuration
      * @return the started game process
      */
-    public Process launch(LaunchProfile launchProfile, AuthProfile authProfile)
+    public Process launch(LaunchProfile launchProfile, AuthProfile authProfile, ModloaderProfile modloaderProfile)
     {
         try
         {
@@ -39,10 +43,45 @@ public class MinecraftLauncher
             if (!Files.exists(versionJsonPath)) throw new net.consler.librelauncherlib.exception.VersionJsonMissingException("Version JSON missing. Run the installer first.");
 
             JsonObject versionDetails = JsonParser.parseString(Files.readString(versionJsonPath)).getAsJsonObject();
-            String mainClass = versionDetails.get("mainClass").getAsString();
             String assetIndex = versionDetails.getAsJsonObject("assetIndex").get("id").getAsString();
 
-            String classPath = buildClassPath(versionDetails.getAsJsonArray("libraries"), gameDir, gameDir, version);
+            JsonArray allLibraries = versionDetails.getAsJsonArray("libraries");
+            String mainClass;
+
+            if (modloaderProfile.loaderId().equals("fabric"))
+            {
+                Path fabricJsonPath = gameDir.resolve("fabric-profile.json");
+
+                JsonObject fabricDetails = JsonParser.parseString(Files.readString(fabricJsonPath)).getAsJsonObject();
+                JsonArray fabricLibraries = fabricDetails.getAsJsonArray("libraries");
+
+                for (JsonElement lib : fabricLibraries)
+                {
+                    allLibraries.add(lib);
+                }
+
+                mainClass = "net.fabricmc.loader.impl.launch.knot.KnotClient";
+            }
+            else if(modloaderProfile.loaderId().equals("quilt"))
+            {
+                Path quiltJsonPath = gameDir.resolve("quilt-profile.json");
+
+                JsonObject quiltDetails = JsonParser.parseString(Files.readString(quiltJsonPath)).getAsJsonObject();
+                JsonArray quiltLibraries = quiltDetails.getAsJsonArray("libraries");
+
+                for (JsonElement lib : quiltLibraries)
+                {
+                    allLibraries.add(lib);
+                }
+
+                mainClass = "org.quiltmc.loader.impl.launch.knot.KnotClient";
+            }
+            else
+            {
+                mainClass = versionDetails.get("mainClass").getAsString();
+            }
+
+            String classPath = buildClassPath(allLibraries, gameDir, gameDir, version);
 
             Map<String, String> args = new HashMap<>();
             args.put("${auth_player_name}", authProfile.username());
@@ -73,14 +112,12 @@ public class MinecraftLauncher
             pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
             pb.redirectError(ProcessBuilder.Redirect.INHERIT);
 
-            LegacyAssetReconstructor.reconstructIfNeeded(gameDir, assetsDir, assetIndex);
-
             return pb.start();
         }
         catch (Exception e)
         {
-            if (e instanceof net.consler.librelauncherlib.exception.LibraryException) throw (net.consler.librelauncherlib.exception.LibraryException) e;
-            throw new net.consler.librelauncherlib.exception.LaunchException("Failed to launch Minecraft for version " + launchProfile.version(), e);
+            if (e instanceof LibraryException) throw (LibraryException) e;
+            throw new LaunchException("Failed to launch Minecraft for version " + launchProfile.version(), e);
         }
     }
     private String buildClassPath(JsonArray libraries, Path gameDir, Path versionsDir, String versionId)
@@ -95,10 +132,15 @@ public class MinecraftLauncher
 
             if (lib.has("rules") && !isAllowedByRules(lib.getAsJsonArray("rules"), osName)) continue;
 
-            JsonObject downloads = lib.getAsJsonObject("downloads");
-            if (downloads != null && downloads.has("artifact"))
+            if (lib.has("downloads") && lib.getAsJsonObject("downloads").has("artifact"))
             {
-                String path = downloads.getAsJsonObject("artifact").get("path").getAsString();
+                String path = lib.getAsJsonObject("downloads").getAsJsonObject("artifact").get("path").getAsString();
+                sb.append(librariesDir.resolve(path).toAbsolutePath()).append(File.pathSeparator);
+            }
+            else if (lib.has("name"))
+            {
+                String mavenName = lib.get("name").getAsString();
+                String path = MavenHelper.toJarPath(mavenName);
                 sb.append(librariesDir.resolve(path).toAbsolutePath()).append(File.pathSeparator);
             }
         }
