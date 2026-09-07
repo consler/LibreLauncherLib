@@ -6,6 +6,10 @@ import com.google.gson.JsonObject;
 import net.consler.librelauncherlib.exception.InstallationException;
 import net.consler.librelauncherlib.exception.LibraryException;
 import net.consler.librelauncherlib.exception.VersionNotFoundException;
+import net.consler.librelauncherlib.modloader.FabricInstaller;
+import net.consler.librelauncherlib.modloader.ModloaderProfile;
+import net.consler.librelauncherlib.modloader.QuiltInstaller;
+import net.consler.librelauncherlib.utill.DownloadManager;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -34,15 +38,16 @@ public class MinecraftInstaller
      * Installs the selected Minecraft version to the supplied root directory.
      *
      * @param version The version of Minecraft to install (e.g. "26.2")
-     * @param rootDirectory The directory that will hold client.jar, libraries, assets, natives, and version metadata
+     * @param gameDir The directory that will hold client.jar, libraries, assets, natives, and version metadata
+     * @param modloaderProfile The modloader profile to use for installation
      */
-    public void install(String version, Path rootDirectory)
+    public void install(String version, Path gameDir, ModloaderProfile modloaderProfile)
     {
         try
         {
-            Path librariesDir = rootDirectory.resolve("libraries");
-            Path assetsDir = rootDirectory.resolve("assets");
-            Path nativesDir = rootDirectory.resolve("natives");
+            Path librariesDir = gameDir.resolve("libraries");
+            Path assetsDir = gameDir.resolve("assets");
+            Path nativesDir = gameDir.resolve("natives");
 
             Files.createDirectories(librariesDir);
             Files.createDirectories(assetsDir);
@@ -52,22 +57,33 @@ public class MinecraftInstaller
             String versionJsonUrl = findVersionUrl(manifest, version);
 
             JsonObject versionDetails = downloadManager.fetchJson(versionJsonUrl);
-            Files.writeString(rootDirectory.resolve(version + ".json"), versionDetails.toString());
+            Files.writeString(gameDir.resolve(version + ".json"), versionDetails.toString());
 
             List<DownloadTask> tasks = new ArrayList<>();
             List<Path> nativeZipsToExtract = new ArrayList<>();
 
             JsonObject downloads = versionDetails.getAsJsonObject("downloads");
             String clientUrl = downloads.getAsJsonObject("client").get("url").getAsString();
-            tasks.add(new DownloadTask(clientUrl, rootDirectory.resolve(version + ".jar")));
+            tasks.add(new DownloadTask(clientUrl, gameDir.resolve(version + ".jar")));
 
             libraryProcessor.processLibraries(versionDetails.getAsJsonArray("libraries"), librariesDir, tasks, nativeZipsToExtract);
+
             assetProcessor.processAssets(versionDetails.getAsJsonObject("assetIndex"), assetsDir, tasks);
 
             downloadManager.downloadBatch(tasks);
 
             nativeExtractor.extractNatives(nativeZipsToExtract, nativesDir);
+
             downloadManager.shutdown();
+
+            if(modloaderProfile.loaderId().equals("fabric"))
+            {
+                FabricInstaller.install(modloaderProfile, gameDir, version);
+            }
+            else if(modloaderProfile.loaderId().equals("quilt"))
+            {
+                QuiltInstaller.install(modloaderProfile, gameDir, version);
+            }
         }
         catch (Exception e)
         {

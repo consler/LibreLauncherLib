@@ -4,13 +4,14 @@ import net.consler.librelauncherlib.auth.AuthProfile;
 import net.consler.librelauncherlib.install.MinecraftInstaller;
 import net.consler.librelauncherlib.launch.LaunchProfile;
 import net.consler.librelauncherlib.launch.MinecraftLauncher;
+import net.consler.librelauncherlib.modloader.ModloaderProfile;
 import net.consler.librelauncherlib.versions.Forge;
 
 import java.nio.file.Path;
 
 public class Main
 {
-    private static final String version = "26.2";
+    private static final String version = "1.20.4";
     private static final Path gameDir = Path.of("/home/consler/TEST");
 
     static void main(String[] args)
@@ -25,7 +26,7 @@ public class Main
     private static void install()
     {
         MinecraftInstaller installer = new MinecraftInstaller();
-        installer.install(version, gameDir);
+        installer.install(version, gameDir, new ModloaderProfile("fabric", "0.19.5"));
     }
 
     private static void run()
@@ -33,11 +34,11 @@ public class Main
         LaunchProfile launchProfile = new LaunchProfile.Builder(version, gameDir).build();
         AuthProfile authProfile = AuthProfile.Offline("Consler");
 
-        new MinecraftLauncher().launch(launchProfile, authProfile);
+        new MinecraftLauncher().launch(launchProfile, authProfile, new ModloaderProfile("fabric", "0.19.5"));
     }
 
     private static void listVersions()
     {
-        System.out.println(Forge.getVersionsCompatibleWith("26.2"));
+        System.out.println(Forge.getVersionsCompatibleWith("1.20.4"));
     }
 }
