@@ -6,9 +6,7 @@ import com.google.gson.JsonObject;
 import net.consler.librelauncherlib.exception.InstallationException;
 import net.consler.librelauncherlib.exception.LibraryException;
 import net.consler.librelauncherlib.exception.VersionNotFoundException;
-import net.consler.librelauncherlib.modloader.FabricInstaller;
-import net.consler.librelauncherlib.modloader.ModloaderProfile;
-import net.consler.librelauncherlib.modloader.QuiltInstaller;
+import net.consler.librelauncherlib.modloader.*;
 import net.consler.librelauncherlib.utill.DownloadManager;
 
 import java.nio.file.Files;
@@ -40,8 +38,9 @@ public class MinecraftInstaller
      * @param version The version of Minecraft to install (e.g. "26.2")
      * @param gameDir The directory that will hold client.jar, libraries, assets, natives, and version metadata
      * @param modloaderProfile The modloader profile to use for installation
+     * @param javaBin The path to the Java executable that will be used to install modern Forge or Neoforge. Can be null if you are installing Fabric or Quilt
      */
-    public void install(String version, Path gameDir, ModloaderProfile modloaderProfile)
+    public void install(String version, Path gameDir, ModloaderProfile modloaderProfile, Path javaBin)
     {
         try
         {
@@ -76,13 +75,12 @@ public class MinecraftInstaller
 
             downloadManager.shutdown();
 
-            if(modloaderProfile.loaderId().equals("fabric"))
+            switch (modloaderProfile.loaderId())
             {
-                FabricInstaller.install(modloaderProfile, gameDir, version);
-            }
-            else if(modloaderProfile.loaderId().equals("quilt"))
-            {
-                QuiltInstaller.install(modloaderProfile, gameDir, version);
+                case "fabric" -> FabricInstaller.install(modloaderProfile, gameDir, version);
+                case "quilt" -> QuiltInstaller.install(modloaderProfile, gameDir, version);
+                case "forge" -> ForgeInstaller.install(modloaderProfile, gameDir, version, javaBin);
+                case "neoforge" -> NeoforgeInstaller.install(modloaderProfile, gameDir, version, javaBin);
             }
         }
         catch (Exception e)

@@ -18,6 +18,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static net.consler.librelauncherlib.utill.SystemHelper.getArchitecture;
 
@@ -40,48 +42,114 @@ public class MinecraftLauncher
             Path nativesDir = gameDir.resolve("natives");
             Path assetsDir = gameDir.resolve("assets");
 
-            if (!Files.exists(versionJsonPath)) throw new net.consler.librelauncherlib.exception.VersionJsonMissingException("Version JSON missing. Run the installer first.");
+            if (!Files.exists(versionJsonPath))
+                throw new net.consler.librelauncherlib.exception.VersionJsonMissingException("Version JSON missing. Run the installer first.");
 
             JsonObject versionDetails = JsonParser.parseString(Files.readString(versionJsonPath)).getAsJsonObject();
+
             String assetIndex = versionDetails.getAsJsonObject("assetIndex").get("id").getAsString();
 
             JsonArray allLibraries = versionDetails.getAsJsonArray("libraries");
             String mainClass;
 
-            if (modloaderProfile.loaderId().equals("fabric"))
+            String loaderId = modloaderProfile.loaderId() != null ? modloaderProfile.loaderId().toLowerCase() : "vanilla";
+            JsonObject loaderDetails = null;
+
+            switch (loaderId)
             {
-                Path fabricJsonPath = gameDir.resolve("fabric-profile.json");
-
-                JsonObject fabricDetails = JsonParser.parseString(Files.readString(fabricJsonPath)).getAsJsonObject();
-                JsonArray fabricLibraries = fabricDetails.getAsJsonArray("libraries");
-
-                for (JsonElement lib : fabricLibraries)
+                case "fabric" ->
                 {
-                    allLibraries.add(lib);
+                    Path fabricJsonPath = gameDir.resolve("fabric-profile.json");
+                    if (Files.exists(fabricJsonPath))
+                    {
+                        loaderDetails = JsonParser.parseString(Files.readString(fabricJsonPath)).getAsJsonObject();
+                    }
+                    mainClass = "net.fabricmc.loader.impl.launch.knot.KnotClient";
+                }
+                case "quilt" -> {
+                    Path quiltJsonPath = gameDir.resolve("quilt-profile.json");
+                    if (Files.exists(quiltJsonPath))
+                    {
+                        loaderDetails = JsonParser.parseString(Files.readString(quiltJsonPath)).getAsJsonObject();
+                    }
+                    mainClass = "org.quiltmc.loader.impl.launch.knot.KnotClient";
+                }
+                case "forge" ->
+                {
+                    Path forgeJsonPath = gameDir.resolve("forge-profile.json");
+                    if (Files.exists(forgeJsonPath))
+                    {
+                        loaderDetails = JsonParser.parseString(Files.readString(forgeJsonPath)).getAsJsonObject();
+                    }
+
+                    if (loaderDetails != null && loaderDetails.has("mainClass"))
+                    {
+                        mainClass = loaderDetails.get("mainClass").getAsString();
+                    }
+                    else
+                    {
+                        mainClass = versionDetails.has("mainClass") ? versionDetails.get("mainClass").getAsString() : "cpw.mods.bootstraplauncher.BootstrapLauncher";
+                    }
+                }
+                case "neoforge" ->
+                {
+                    Path neoforgeJsonPath = gameDir.resolve("neoforge-profile.json");
+                    if (Files.exists(neoforgeJsonPath))
+                    {
+                        loaderDetails = JsonParser.parseString(Files.readString(neoforgeJsonPath)).getAsJsonObject();
+                    }
+
+                    if (loaderDetails != null && loaderDetails.has("mainClass"))
+                    {
+                        mainClass = loaderDetails.get("mainClass").getAsString();
+                    }
+                    else
+                    {
+                        mainClass = versionDetails.has("mainClass") ? versionDetails.get("mainClass").getAsString() : "net.neoforged.neoforge.bootstrap.NeoForgeBootstrap";
+                    }
+                }
+                default -> mainClass = versionDetails.get("mainClass").getAsString();
+            }
+
+            if (loaderDetails != null)
+            {
+                if (loaderDetails.has("libraries"))
+                {
+                    for (JsonElement lib : loaderDetails.getAsJsonArray("libraries"))
+                    {
+                        allLibraries.add(lib);
+                    }
                 }
 
-                mainClass = "net.fabricmc.loader.impl.launch.knot.KnotClient";
-            }
-            else if(modloaderProfile.loaderId().equals("quilt"))
-            {
-                Path quiltJsonPath = gameDir.resolve("quilt-profile.json");
-
-                JsonObject quiltDetails = JsonParser.parseString(Files.readString(quiltJsonPath)).getAsJsonObject();
-                JsonArray quiltLibraries = quiltDetails.getAsJsonArray("libraries");
-
-                for (JsonElement lib : quiltLibraries)
+                if (loaderDetails.has("arguments"))
                 {
-                    allLibraries.add(lib);
+                    JsonObject loaderArgs = loaderDetails.getAsJsonObject("arguments");
+                    if (!versionDetails.has("arguments"))
+                    {
+                        versionDetails.add("arguments", new JsonObject());
+                    }
+                    JsonObject baseArgs = versionDetails.getAsJsonObject("arguments");
+
+                    if (loaderArgs.has("jvm"))
+                    {
+                        if (!baseArgs.has("jvm")) baseArgs.add("jvm", new JsonArray());
+                        baseArgs.getAsJsonArray("jvm").addAll(loaderArgs.getAsJsonArray("jvm"));
+                    }
+                    if (loaderArgs.has("game"))
+                    {
+                        if (!baseArgs.has("game")) baseArgs.add("game", new JsonArray());
+                        baseArgs.getAsJsonArray("game").addAll(loaderArgs.getAsJsonArray("game"));
+                    }
                 }
-
-                mainClass = "org.quiltmc.loader.impl.launch.knot.KnotClient";
+                else if (loaderDetails.has("minecraftArguments"))
+                {
+                    versionDetails.add("minecraftArguments", loaderDetails.get("minecraftArguments"));
+                }
             }
-            else
-            {
-                mainClass = versionDetails.get("mainClass").getAsString();
-            }
+            Path versionsDir = gameDir.resolve("versions").resolve(version);
+            String classPath = buildClassPath(allLibraries, gameDir, versionsDir, version);
 
-            String classPath = buildClassPath(allLibraries, gameDir, gameDir, version);
+            Path librariesDir = gameDir.resolve("libraries");
 
             Map<String, String> args = new HashMap<>();
             args.put("${auth_player_name}", authProfile.username());
@@ -95,6 +163,8 @@ public class MinecraftLauncher
             args.put("${user_type}", "msa");
             args.put("${version_type}", "release");
             args.put("${natives_directory}", nativesDir.toAbsolutePath().toString());
+            args.put("${library_directory}", librariesDir.toAbsolutePath().toString());
+            args.put("${classpath_separator}", File.pathSeparator);
             args.put("${launcher_name}", launchProfile.launcherName());
             args.put("${launcher_version}", launchProfile.launcherVersion());
             args.put("${classpath}", classPath);
@@ -120,6 +190,16 @@ public class MinecraftLauncher
             throw new LaunchException("Failed to launch Minecraft for version " + launchProfile.version(), e);
         }
     }
+
+    private int parseJavaMajorVersion(String versionOutput)
+    {
+        Matcher m = Pattern.compile("version \"(\\d+)(?:\\.(\\d+))?").matcher(versionOutput);
+        if (!m.find()) return -1;
+        int first = Integer.parseInt(m.group(1));
+        if (first == 1 && m.group(2) != null) return Integer.parseInt(m.group(2));
+        return first;
+    }
+
     private String buildClassPath(JsonArray libraries, Path gameDir, Path versionsDir, String versionId)
     {
         StringBuilder sb = new StringBuilder();
@@ -222,7 +302,8 @@ public class MinecraftLauncher
     {
         boolean allowed = false;
 
-        for (JsonElement elem : rules) {
+        for (JsonElement elem : rules)
+        {
             JsonObject rule = elem.getAsJsonObject();
             String action = rule.get("action").getAsString();
             boolean match = true;
