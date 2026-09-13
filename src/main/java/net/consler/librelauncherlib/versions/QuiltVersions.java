@@ -13,9 +13,9 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Fabric
+public class QuiltVersions
 {
-    private static final String METADATA_URL = "https://meta.fabricmc.net/v2/versions/loader";
+    private static final String METADATA_URL = "https://meta.quiltmc.org/v3/versions/loader";
 
     private static JsonArray cachedVersionManifest;
 
@@ -36,11 +36,10 @@ public class Fabric
             throw new ListVersionsFailureException(e.getMessage());
         }
     }
-
     /**
-     * Returns a list of all available Fabric versions.
+     * Returns a list of all available Quilt versions.
      *
-     * @return List of Fabric versions
+     * @return List of Quilt versions
      */
 
     public static List<String> getVersions()
@@ -52,20 +51,20 @@ public class Fabric
         }
         return versions;
     }
-
     /**
      * Clears cached versions. Useful if the version list needs to be refreshed (e.g. a new version came out).
      */
+
     public static void clearCachedVersions()
     {
         cachedVersionManifest = null;
     }
 
     /**
-     * Returns a list of Fabric versions compatible with the specified Minecraft version.
+     * Returns a list of Quilt versions compatible with the specified Minecraft version.
      *
-     * @param minecraftVersion Minecraft version for which to find compatible Fabric versions
-     * @return A list of compatible Fabric versions
+     * @param minecraftVersion Minecraft version for which to find compatible Quilt versions
+     * @return A list of compatible Quilt versions
      */
     public static List<String> getVersionsCompatibleWith(String minecraftVersion)
     {
@@ -100,5 +99,4 @@ public class Fabric
 
         return versions;
     }
-
 }

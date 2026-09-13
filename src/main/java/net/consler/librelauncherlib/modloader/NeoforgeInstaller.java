@@ -11,11 +11,18 @@ import java.nio.file.StandardCopyOption;
 
 public class NeoforgeInstaller
 {
-    public static void install(ModloaderProfile profile, Path gameDir, String minecraftVersion, Path javaBin)
+    /**
+     * Installs NeoForge into the provided game directory.
+     *
+     * @param modloaderProfile The version of NeoForge to install (e.g. "26.2.0.88")
+     * @param gameDir The directory where NeoForge will be installed.
+     * @param minecraftVersion The version of Minecraft in the provided directory.
+     */
+    public static void install(ModloaderProfile modloaderProfile, Path gameDir, String minecraftVersion, Path javaBin)
     {
         try
         {
-            String neoForgeVersion = profile.loaderVersion();
+            String neoForgeVersion = modloaderProfile.loaderVersion();
             String installerUrl = "https://maven.neoforged.net/releases/net/neoforged/neoforge/" + neoForgeVersion + "/neoforge-" + neoForgeVersion + "-installer.jar";
             Path installerPath = gameDir.resolve("neoforge-installer.jar");
             new DownloadManager().downloadFile(installerUrl, installerPath);

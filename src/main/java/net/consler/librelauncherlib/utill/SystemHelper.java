@@ -2,6 +2,7 @@ package net.consler.librelauncherlib.utill;
 
 import java.awt.*;
 import java.net.URI;
+import java.nio.file.Path;
 
 public class SystemHelper
 {
@@ -31,5 +32,10 @@ public class SystemHelper
         {
             System.out.println("Could not open browser automatically. Please open: " + url);
         }
+    }
+
+    public static Path getJavaBin()
+    {
+        return Path.of(System.getProperty("java.home"), "bin", "java" + (SystemHelper.getOS().equals("windows") ? ".exe" : ""));
     }
 }

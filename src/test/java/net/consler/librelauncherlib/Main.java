@@ -5,13 +5,15 @@ import net.consler.librelauncherlib.install.MinecraftInstaller;
 import net.consler.librelauncherlib.launch.LaunchProfile;
 import net.consler.librelauncherlib.launch.MinecraftLauncher;
 import net.consler.librelauncherlib.modloader.ModloaderProfile;
-import net.consler.librelauncherlib.versions.Neoforge;
+import net.consler.librelauncherlib.versions.ForgeVersions;
+import net.consler.librelauncherlib.versions.NeoforgeVersions;
+import net.consler.librelauncherlib.versions.QuiltVersions;
 
 import java.nio.file.Path;
 
 public class Main
 {
-    private static final String version = "1.21.11";
+    private static final String version = "26.2";
     private static final Path gameDir = Path.of("/home/consler/TEST");
     private static final Path java8Bin = Path.of("/home/consler/.jdks/corretto-1.8.0_452/bin/java");
     private static final Path java25Bin = Path.of("/home/consler/.jdks/jbr-25.0.4.1/bin/java");
@@ -27,8 +29,7 @@ public class Main
     }
     private static void install()
     {
-        MinecraftInstaller installer = new MinecraftInstaller();
-        installer.install(version, gameDir, new ModloaderProfile("neoforge", "21.11.45"), java25Bin);
+        new MinecraftInstaller().install(version, gameDir, ModloaderProfile.VANILLA());
     }
 
     private static void run()
@@ -36,11 +37,13 @@ public class Main
         LaunchProfile launchProfile = new LaunchProfile.Builder(version, gameDir).withJavaPath(java25Bin).build();
         AuthProfile authProfile = AuthProfile.Offline("Consler");
 
-       new MinecraftLauncher().launch(launchProfile, authProfile, new ModloaderProfile("neoforge", "21.11.45"));
+        new MinecraftLauncher().launch(launchProfile, authProfile, ModloaderProfile.VANILLA());
     }
 
     private static void listVersions()
     {
-        System.out.println(Neoforge.getVersionsCompatibleWith(version));
+        System.out.println(QuiltVersions.getVersionsCompatibleWith(version));
+        System.out.println(ForgeVersions.getVersionsCompatibleWith(version));
+        System.out.println(NeoforgeVersions.getVersionsCompatibleWith(version));
     }
 }

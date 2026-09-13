@@ -6,16 +6,16 @@ A Java library for downloading and launching Minecraft versions.
 ## Usage example
 1) Install a version:
     ``` java
-    new MinecraftInstaller().install("26.2", Path.of("/path/to/game"), new ModLoaderProfile("fabric", "0.19.5"));
+    new MinecraftInstaller().install(version, gameDir, ModloaderProfile.VANILLA());
     ```
 
 2) Launch:
    ``` java
    LaunchProfile launchProfile = new LaunchProfile.Builder(version, gameDir).build();
-   AuthProfile authProfile = AuthProfile.Offline("Player");
-   ModLoaderProfile loaderProfile = new ModLoaderProfile("fabric", "0.19.5");
-
-   new MinecraftLauncher().launch(launchProfile, authProfile, loaderProfile);
+   AuthProfile authProfile = AuthProfile.Offline("Consler");
+   ModLoaderProfile modLoaderProfile = new ModLoaderProfile(ModLoaderProfile.FABRIC_ID, "0.19.5")
+   
+   new MinecraftLauncher().launch(launchProfile, authProfile, modloaderProfile);
    ```
 3) List versions:
    ``` java

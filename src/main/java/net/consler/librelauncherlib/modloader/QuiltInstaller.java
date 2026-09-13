@@ -10,14 +10,21 @@ import java.nio.file.Path;
 
 public class QuiltInstaller
 {
-    public static void install(ModloaderProfile profile, Path gameDir, String minecraftVersion)
+    /**
+     * Installs Quilt into the provided game directory.
+     *
+     * @param modloaderProfile The version of Quilt to install (e.g. "0.25.0")
+     * @param gameDir The directory where Quilt will be installed.
+     * @param minecraftVersion The version of Minecraft in the provided directory.
+     */
+    public static void install(ModloaderProfile modloaderProfile, Path gameDir, String minecraftVersion)
     {
         try
         {
             DownloadManager downloadManager = new DownloadManager();
             Path profilePath = gameDir.resolve("quilt-profile.json");
 
-            downloadManager.downloadFile("https://meta.quiltmc.org/v3/versions/loader/" + minecraftVersion + "/" + profile.loaderVersion() + "/profile/json", profilePath);
+            downloadManager.downloadFile("https://meta.quiltmc.org/v3/versions/loader/" + minecraftVersion + "/" + modloaderProfile.loaderVersion() + "/profile/json", profilePath);
 
             JsonObject profileJson = JsonParser.parseString(Files.readString(profilePath)).getAsJsonObject();
             JsonArray libraries = profileJson.getAsJsonArray("libraries");
