@@ -20,11 +20,18 @@ import java.util.zip.ZipFile;
 
 public class ForgeInstaller
 {
-    public static void install(ModloaderProfile profile, Path gameDir, String minecraftVersion, Path javaBin)
+    /**
+     * Installs Forge into the provided game directory.
+     *
+     * @param modloaderProfile The version of Forge to install (e.g. "26.2-65.1.3")
+     * @param gameDir The directory where Forge will be installed.
+     * @param minecraftVersion The version of Minecraft in the provided directory.
+     */
+    public static void install(ModloaderProfile modloaderProfile, Path gameDir, String minecraftVersion, Path javaBin)
     {
         try
         {
-            String loaderVer = profile.loaderVersion();
+            String loaderVer = modloaderProfile.loaderVersion();
             String forgeVersion = loaderVer.startsWith(minecraftVersion) ? loaderVer : minecraftVersion + "-" + loaderVer;
             String installerUrl = "https://maven.minecraftforge.net/net/minecraftforge/forge/" + forgeVersion + "/forge-" + forgeVersion + "-installer.jar";
             Path installerPath = gameDir.resolve("forge-installer.jar");

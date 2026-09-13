@@ -11,7 +11,7 @@ import java.net.URI;
 import java.net.URL;
 import java.util.*;
 
-public class Vanilla
+public class VanillaVersions
 {
     private static final String METADATA_URL = "https://piston-meta.mojang.com/mc/game/version_manifest.json";
     private static JsonObject cachedVersionManifest;

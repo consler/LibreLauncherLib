@@ -1,5 +1,7 @@
 package net.consler.librelauncherlib.launch;
 
+import net.consler.librelauncherlib.utill.SystemHelper;
+
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,7 +16,7 @@ public record LaunchProfile(int ramMb, String version, String launcherName, Stri
         private int ramMb = 2048;
         private String launcherName = "LibreLauncherLib";
         private String launcherVersion = "1.0";
-        private Path javaPath = Path.of(System.getProperty("java.home"), "bin", System.getProperty("os.name").toLowerCase().contains("win") ? "java.exe" : "java");
+        private Path javaPath = SystemHelper.getJavaBin();
         private final List<String> extraJvmArgs = new ArrayList<>();
 
         public Builder(String version, Path gameDir)

@@ -23,10 +23,7 @@ class LibraryProcessor
             String pathStr = MavenHelper.toJarPath(library);
             Path target = librariesDir.resolve(pathStr);
 
-            // Default to Quilt Maven / Maven Central if the library JSON lacks an explicit 'url' key
-            String baseUrl = libObj.has("url")
-                    ? libObj.get("url").getAsString()
-                    : "https://maven.quiltmc.org/repository/release/";
+            String baseUrl = libObj.has("url") ? libObj.get("url").getAsString() : "https://maven.quiltmc.org/repository/release/";
 
             downloadManager.downloadFile(baseUrl + pathStr, target);
         }

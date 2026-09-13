@@ -13,9 +13,9 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Neoforge
+public class ForgeVersions
 {
-    private static final String METADATA_URL = "https://maven.neoforged.net/releases/net/neoforged/neoforge/maven-metadata.xml";
+    private static final String METADATA_URL = "https://maven.minecraftforge.net/net/minecraftforge/forge/maven-metadata.xml";
     private static List<String> cachedVersions;
 
     private static List<String> getVersionManifest()
@@ -51,11 +51,10 @@ public class Neoforge
     }
 
     /**
-     * Returns a list of all available Neoforge versions.
+     * Returns a list of all available Forge versions.
      *
-     * @return List of Neoforge versions
+     * @return List of Forge versions
      */
-
     public static List<String> getVersions()
     {
         return getVersionManifest().reversed();
@@ -71,18 +70,15 @@ public class Neoforge
     }
 
     /**
-     * Returns a list of Neoforge versions compatible with the specified Minecraft version.
+     * Returns a list of Forge versions compatible with the specified Minecraft version.
      *
-     * @param minecraftVersion Minecraft version for which to find compatible Neoforge versions
-     * @return A list of compatible Neoforge versions
+     * @param minecraftVersion Minecraft version for which to find compatible Forge versions
+     * @return A list of compatible Forge versions
      */
     public static List<String> getVersionsCompatibleWith(String minecraftVersion)
     {
         List<String> versions = new ArrayList<>();
-        String prefix;
-
-        if (minecraftVersion.startsWith("1.")) prefix = minecraftVersion.substring(2);
-        else prefix = minecraftVersion;
+        String prefix = minecraftVersion + "-";
 
         try
         {

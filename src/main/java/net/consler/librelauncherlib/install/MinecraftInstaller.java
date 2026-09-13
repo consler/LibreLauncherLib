@@ -8,11 +8,14 @@ import net.consler.librelauncherlib.exception.LibraryException;
 import net.consler.librelauncherlib.exception.VersionNotFoundException;
 import net.consler.librelauncherlib.modloader.*;
 import net.consler.librelauncherlib.utill.DownloadManager;
+import net.consler.librelauncherlib.utill.SystemHelper;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+
+import static net.consler.librelauncherlib.modloader.ModloaderProfile.*;
 
 public class MinecraftInstaller
 {
@@ -33,12 +36,25 @@ public class MinecraftInstaller
     }
 
     /**
-     * Installs the selected Minecraft version to the supplied root directory.
+     * Installs the selected Minecraft version to the supplied directory. Uses the Java executable that runs LibreLauncherLib.
      *
      * @param version The version of Minecraft to install (e.g. "26.2")
      * @param gameDir The directory that will hold client.jar, libraries, assets, natives, and version metadata
      * @param modloaderProfile The modloader profile to use for installation
-     * @param javaBin The path to the Java executable that will be used to install modern Forge or Neoforge. Can be null if you are installing Fabric or Quilt
+     */
+    public void install(String version, Path gameDir, ModloaderProfile modloaderProfile)
+    {
+        install(version, gameDir, modloaderProfile, SystemHelper.getJavaBin());
+    }
+
+
+    /**
+     * Installs the selected Minecraft version to the supplied directory.
+     *
+     * @param version The version of Minecraft to install (e.g. "26.2")
+     * @param gameDir The directory that will hold client.jar, libraries, assets, natives, and version metadata
+     * @param modloaderProfile The modloader profile to use for installation
+     * @param javaBin The path to the Java executable that will be used to install modern Forge(1.13+) or Neoforge. Can be null if you are installing Fabric or Quilt
      */
     public void install(String version, Path gameDir, ModloaderProfile modloaderProfile, Path javaBin)
     {
@@ -77,10 +93,10 @@ public class MinecraftInstaller
 
             switch (modloaderProfile.loaderId())
             {
-                case "fabric" -> FabricInstaller.install(modloaderProfile, gameDir, version);
-                case "quilt" -> QuiltInstaller.install(modloaderProfile, gameDir, version);
-                case "forge" -> ForgeInstaller.install(modloaderProfile, gameDir, version, javaBin);
-                case "neoforge" -> NeoforgeInstaller.install(modloaderProfile, gameDir, version, javaBin);
+                case FABRIC_ID -> FabricInstaller.install(modloaderProfile, gameDir, version);
+                case QUILT_ID -> QuiltInstaller.install(modloaderProfile, gameDir, version);
+                case FORGE_ID -> ForgeInstaller.install(modloaderProfile, gameDir, version, javaBin);
+                case NEOFORGE_ID -> NeoforgeInstaller.install(modloaderProfile, gameDir, version, javaBin);
             }
         }
         catch (Exception e)
