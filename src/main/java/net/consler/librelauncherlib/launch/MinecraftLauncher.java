@@ -7,19 +7,19 @@ import com.google.gson.JsonParser;
 import net.consler.librelauncherlib.auth.AuthProfile;
 import net.consler.librelauncherlib.exception.LaunchException;
 import net.consler.librelauncherlib.exception.LibraryException;
+import net.consler.librelauncherlib.exception.VersionJsonMissingException;
 import net.consler.librelauncherlib.modloader.ModloaderProfile;
 import net.consler.librelauncherlib.utill.MavenHelper;
 import net.consler.librelauncherlib.utill.SystemHelper;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static net.consler.librelauncherlib.utill.SystemHelper.getArchitecture;
 
@@ -38,18 +38,22 @@ public class MinecraftLauncher
             Path gameDir = launchProfile.gameDir();
             String version = launchProfile.version();
 
-            Path versionJsonPath = gameDir.resolve(version + ".json");
+            Path versionJsonPath = resolveFile(gameDir, version, ".json");
+            if (!Files.exists(versionJsonPath))
+            {
+                throw new VersionJsonMissingException("Version JSON missing for " + version + ". Run the installer first.");
+            }
+
             Path nativesDir = gameDir.resolve("natives");
             Path assetsDir = gameDir.resolve("assets");
 
-            if (!Files.exists(versionJsonPath))
-                throw new net.consler.librelauncherlib.exception.VersionJsonMissingException("Version JSON missing. Run the installer first.");
-
             JsonObject versionDetails = JsonParser.parseString(Files.readString(versionJsonPath)).getAsJsonObject();
 
-            String assetIndex = versionDetails.getAsJsonObject("assetIndex").get("id").getAsString();
+            String assetIndex = versionDetails.has("assetIndex") && versionDetails.getAsJsonObject("assetIndex").has("id")
+                    ? versionDetails.getAsJsonObject("assetIndex").get("id").getAsString()
+                    : version;
 
-            JsonArray allLibraries = versionDetails.getAsJsonArray("libraries");
+            JsonArray allLibraries = versionDetails.has("libraries") ? versionDetails.getAsJsonArray("libraries") : new JsonArray();
             String mainClass;
 
             String loaderId = modloaderProfile.loaderId() != null ? modloaderProfile.loaderId().toLowerCase() : "vanilla";
@@ -66,7 +70,8 @@ public class MinecraftLauncher
                     }
                     mainClass = "net.fabricmc.loader.impl.launch.knot.KnotClient";
                 }
-                case "quilt" -> {
+                case "quilt" ->
+                {
                     Path quiltJsonPath = gameDir.resolve("quilt-profile.json");
                     if (Files.exists(quiltJsonPath))
                     {
@@ -146,9 +151,18 @@ public class MinecraftLauncher
                     versionDetails.add("minecraftArguments", loaderDetails.get("minecraftArguments"));
                 }
             }
-            Path versionsDir = gameDir.resolve("versions").resolve(version);
-            String classPath = buildClassPath(allLibraries, gameDir, versionsDir, version);
 
+            String jarVersion = versionDetails.has("inheritsFrom")
+                    ? versionDetails.get("inheritsFrom").getAsString()
+                    : version;
+
+            Path clientJarPath = resolveFile(gameDir, jarVersion, ".jar");
+            if (!Files.exists(clientJarPath))
+            {
+                throw new FileNotFoundException("Minecraft client JAR missing for version " + jarVersion + " at resolved path.");
+            }
+
+            String classPath = buildClassPath(allLibraries, gameDir, clientJarPath);
             Path librariesDir = gameDir.resolve("libraries");
 
             Map<String, String> args = new HashMap<>();
@@ -191,16 +205,18 @@ public class MinecraftLauncher
         }
     }
 
-    private int parseJavaMajorVersion(String versionOutput)
+    private Path resolveFile(Path gameDir, String version, String extension)
     {
-        Matcher m = Pattern.compile("version \"(\\d+)(?:\\.(\\d+))?").matcher(versionOutput);
-        if (!m.find()) return -1;
-        int first = Integer.parseInt(m.group(1));
-        if (first == 1 && m.group(2) != null) return Integer.parseInt(m.group(2));
-        return first;
+        Path mojangPath = gameDir.resolve("versions").resolve(version).resolve(version + extension);
+        if (Files.exists(mojangPath)) return mojangPath;
+
+        Path flatPath = gameDir.resolve(version + extension);
+        if (Files.exists(flatPath)) return flatPath;
+
+        return mojangPath;
     }
 
-    private String buildClassPath(JsonArray libraries, Path gameDir, Path versionsDir, String versionId)
+    private String buildClassPath(JsonArray libraries, Path gameDir, Path clientJarPath)
     {
         StringBuilder sb = new StringBuilder();
         Path librariesDir = gameDir.resolve("libraries");
@@ -215,17 +231,25 @@ public class MinecraftLauncher
             if (lib.has("downloads") && lib.getAsJsonObject("downloads").has("artifact"))
             {
                 String path = lib.getAsJsonObject("downloads").getAsJsonObject("artifact").get("path").getAsString();
-                sb.append(librariesDir.resolve(path).toAbsolutePath()).append(File.pathSeparator);
+                Path libPath = librariesDir.resolve(path);
+                if (Files.exists(libPath))
+                {
+                    sb.append(libPath.toAbsolutePath()).append(File.pathSeparator);
+                }
             }
             else if (lib.has("name"))
             {
                 String mavenName = lib.get("name").getAsString();
                 String path = MavenHelper.toJarPath(mavenName);
-                sb.append(librariesDir.resolve(path).toAbsolutePath()).append(File.pathSeparator);
+                Path libPath = librariesDir.resolve(path);
+                if (Files.exists(libPath))
+                {
+                    sb.append(libPath.toAbsolutePath()).append(File.pathSeparator);
+                }
             }
         }
 
-        sb.append(versionsDir.resolve(versionId + ".jar").toAbsolutePath());
+        sb.append(clientJarPath.toAbsolutePath());
         return sb.toString();
     }
 
@@ -233,7 +257,7 @@ public class MinecraftLauncher
     {
         List<String> args = new ArrayList<>();
 
-        // 1.13-
+        // 1.12-
         if (argType.equals("game") && versionDetails.has("minecraftArguments"))
         {
             String[] legacyArgs = versionDetails.get("minecraftArguments").getAsString().split(" ");
@@ -311,7 +335,7 @@ public class MinecraftLauncher
             if (rule.has("os"))
             {
                 JsonObject os = rule.getAsJsonObject("os");
-                if (os.has("name") ) match = os.get("name").getAsString().equalsIgnoreCase(osName);
+                if (os.has("name")) match = os.get("name").getAsString().equalsIgnoreCase(osName);
                 if (os.has("arch")) match = match && os.get("arch").getAsString().equalsIgnoreCase(getArchitecture());
             }
 
