@@ -6,11 +6,11 @@
 
     <groupId>net.consler</groupId>
     <artifactId>librelauncherlib</artifactId>
-    <version>1.0.1</version>
+    <version>1.1.0</version>
     <packaging>jar</packaging>
 
     <name>LibreLauncherLib</name>
-    <description>Java library for downloading and launching Minecraft.</description>
+    <description>Library for downloading and launching Minecraft.</description>
     <url>https://github.com/consler/LibreLauncherLib</url>
 
     <licenses>
