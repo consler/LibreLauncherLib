@@ -20,7 +20,7 @@ public class WebViewFrame extends JFrame implements AuthCodeProvider
 
     public WebViewFrame()
     {
-        new WebViewFrame(600, 600);
+        this(600, 600);
     }
 
     /**

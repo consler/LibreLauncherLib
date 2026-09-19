@@ -11,6 +11,7 @@ import net.consler.librelauncherlib.modloader.ModloaderProfile;
 import net.consler.librelauncherlib.versions.ForgeVersions;
 import net.consler.librelauncherlib.versions.NeoforgeVersions;
 import net.consler.librelauncherlib.versions.QuiltVersions;
+import net.consler.librelauncherlib.versions.VanillaVersions;
 
 import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
@@ -52,6 +53,7 @@ public class Main
         System.out.println(QuiltVersions.getVersionsCompatibleWith(version));
         System.out.println(ForgeVersions.getVersionsCompatibleWith(version));
         System.out.println(NeoforgeVersions.getVersionsCompatibleWith(version));
+        System.out.println(VanillaVersions.getVersionsFiltered(true, true, false, false));
     }
 
     private static CompletableFuture<Void> loginWithWebView()
