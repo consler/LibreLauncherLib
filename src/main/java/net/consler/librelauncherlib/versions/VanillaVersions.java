@@ -81,6 +81,35 @@ public class VanillaVersions
 
         return filteredVersions;
     }
+
+    /**
+     * Returns a list of Minecraft versions filtered by type.
+     *
+     * @param includeRelease Whether to include release versions
+     * @param includeSnapshots Whether to include snapshot versions
+     * @param includeOldBeta Whether to include old beta versions
+     * @param includeOldAlpha Whether to include old alpha versions
+     * @return List of filtered Minecraft versions
+     */
+    public static List<String> getVersionsFiltered(boolean includeRelease, boolean includeSnapshots, boolean includeOldBeta, boolean includeOldAlpha)
+    {
+        List<String> filteredVersions = new ArrayList<>();
+
+        for (String version : getVersionsWithType().keySet())
+        {
+            String versionType = getVersionsWithType().get(version);
+            if ((includeRelease && "release".equals(versionType)) ||
+                (includeSnapshots && "snapshot".equals(versionType)) ||
+                (includeOldBeta && "old_beta".equals(versionType)) ||
+                (includeOldAlpha && "old_alpha".equals(versionType)))
+            {
+                filteredVersions.add(version);
+            }
+        }
+
+        return filteredVersions;
+    }
+
     /**
      * Clears cached versions. Useful if the version list needs to be refreshed (e.g. a new version came out).
      */
