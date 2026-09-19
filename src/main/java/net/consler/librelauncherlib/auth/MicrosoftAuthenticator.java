@@ -12,25 +12,34 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class MicrosoftAuthenticator
 {
     private static final String AUTH_URL = "https://login.live.com/oauth20_authorize.srf";
     private static final String TOKEN_URL = "https://login.live.com/oauth20_token.srf";
     private static final String REDIRECT_URL = "https://login.live.com/oauth20_desktop.srf";
-    private static final String DEVICE_CODE_URL = "https://login.microsoftonline.com/consumers/oauth2/v2.0/devicecode";
     private static final String DEVICE_TOKEN_URL = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token";
     private static final String CLIENT_ID = "000000004C12AE6F";
     private static final String SCOPE = "XboxLive.signin offline_access";
+    private static final long DEFAULT_TOKEN_LIFETIME_SECONDS = 86400L;
 
     private final Gson gson = new Gson();
 
+    private final Map<String, CompletableFuture<AuthProfile>> refreshesInFlight = new ConcurrentHashMap<>();
+
     public record DeviceCodePrompt(String userCode, String verificationUri, String message) {}
 
+    /**
+     * Log in with Microsoft
+     * @param codeProvider The code provider, usually from a WebViewFrame
+     * @return A CompletableFuture that will complete with an AuthProfile
+     */
     public CompletableFuture<AuthProfile> login(AuthCodeProvider codeProvider)
     {
         CookieHandler.setDefault(new CookieManager());
@@ -69,38 +78,55 @@ public class MicrosoftAuthenticator
         }
     }
 
+    /**
+     * Log in with a refresh token. Safe to call concurrently with the same refresh token from
+     * multiple threads.
+     * @param refreshToken The refresh token to use
+     * @return A CompletableFuture that will complete with an AuthProfile
+     */
     public CompletableFuture<AuthProfile> loginWithRefreshToken(String refreshToken)
     {
-        return CompletableFuture.supplyAsync(() ->
-        {
-            try
-            {
-                Map<String, String> params = new HashMap<>();
-                params.put("client_id", CLIENT_ID);
-                params.put("refresh_token", refreshToken);
-                params.put("grant_type", "refresh_token");
-                params.put("redirect_uri", REDIRECT_URL);
+        return refreshesInFlight.computeIfAbsent(refreshToken, token ->
+                CompletableFuture.supplyAsync(() ->
+                {
+                    try
+                    {
+                        Map<String, String> params = new HashMap<>();
+                        params.put("client_id", CLIENT_ID);
+                        params.put("refresh_token", token);
+                        params.put("grant_type", "refresh_token");
+                        params.put("redirect_uri", REDIRECT_URL);
 
-                JsonObject response = postForm(TOKEN_URL, params);
-                String newMsToken = response.get("access_token").getAsString();
-                String newRefreshToken = response.get("refresh_token").getAsString();
+                        JsonObject response = postForm(TOKEN_URL, params);
+                        String newMsToken = response.get("access_token").getAsString();
+                        String newRefreshToken = response.get("refresh_token").getAsString();
 
-                return authenticateMinecraftWithTokens(newMsToken, newRefreshToken);
-            }
-            catch (Exception e)
-            {
-                throw new TokenRefreshException("Failed to refresh Microsoft token", e);
-            }
-        });
+                        return authenticateMinecraftWithTokens(newMsToken, newRefreshToken);
+                    }
+                    catch (Exception e)
+                    {
+                        throw new TokenRefreshException("Failed to refresh Microsoft token", e);
+                    }
+                }).whenComplete((result, error) -> refreshesInFlight.remove(token)));
+    }
+
+    /**
+     * Returns the given profile if its access token is still valid, otherwise refreshing it
+     * @param profile The profile to check
+     * @return A CompletableFuture completing with a valid AuthProfile.
+     */
+    public CompletableFuture<AuthProfile> refreshIfNeeded(AuthProfile profile)
+    {
+        if (!profile.isExpired()) return CompletableFuture.completedFuture(profile);
+
+        return loginWithRefreshToken(profile.refreshToken());
     }
 
     private String extractAuthCode(String redirectUrl)
     {
-        if (redirectUrl == null)
-            throw new UserCancelledException("Authentication was cancelled by the user.");
+        if (redirectUrl == null) throw new UserCancelledException("Authentication was cancelled by the user.");
 
-        if (!redirectUrl.contains("code="))
-            throw new AuthenticationException("Failed to extract auth code from URL.");
+        if (!redirectUrl.contains("code=")) throw new AuthenticationException("Failed to extract auth code from URL.");
 
         String encodedCode = redirectUrl.split("code=")[1].split("&")[0];
         return URLDecoder.decode(encodedCode, StandardCharsets.UTF_8);
@@ -149,9 +175,7 @@ public class MicrosoftAuthenticator
 
             JsonObject xbl = requestJson("POST", "https://user.auth.xboxlive.com/user/authenticate", xblPayload, null);
             String xblToken = xbl.get("Token").getAsString();
-            String userHash = xbl.getAsJsonObject("DisplayClaims")
-                    .getAsJsonArray("xui").get(0).getAsJsonObject()
-                    .get("uhs").getAsString();
+            String userHash = xbl.getAsJsonObject("DisplayClaims").getAsJsonArray("xui").get(0).getAsJsonObject().get("uhs").getAsString();
 
             JsonObject xstsPayload = new JsonObject();
             JsonObject xstsProps = new JsonObject();
@@ -171,10 +195,12 @@ public class MicrosoftAuthenticator
 
             JsonObject mcAuth = requestJson("POST", "https://api.minecraftservices.com/authentication/login_with_xbox", mcPayload, null);
             String mcToken = mcAuth.get("access_token").getAsString();
+            long expiresInSeconds = mcAuth.has("expires_in") ? mcAuth.get("expires_in").getAsLong() : DEFAULT_TOKEN_LIFETIME_SECONDS;
+            Instant expiresAt = Instant.now().plusSeconds(expiresInSeconds);
 
             JsonObject profile = requestJson("GET", "https://api.minecraftservices.com/minecraft/profile", null, mcToken);
 
-            return new AuthProfile(profile.get("name").getAsString(), profile.get("id").getAsString(), mcToken, msRefreshToken);
+            return new AuthProfile(profile.get("name").getAsString(), profile.get("id").getAsString(), mcToken, msRefreshToken, expiresAt);
         }
         catch (Exception e)
         {

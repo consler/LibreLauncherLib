@@ -12,7 +12,7 @@ A Java library for downloading and launching Minecraft versions.
 2) Launch:
    ``` java
    LaunchProfile launchProfile = new LaunchProfile.Builder(version, gameDir).build();
-   AuthProfile authProfile = AuthProfile.Offline("Consler");
+   AuthProfile authProfile = new MicrosoftAuthenticator().login(new WebViewFrame()).join();
    ModLoaderProfile modLoaderProfile = new ModLoaderProfile(ModLoaderProfile.FABRIC_ID, "0.19.5")
    
    new MinecraftLauncher().launch(launchProfile, authProfile, modloaderProfile);
