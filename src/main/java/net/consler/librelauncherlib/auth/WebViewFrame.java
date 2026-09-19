@@ -14,10 +14,24 @@ public class WebViewFrame extends JFrame implements AuthCodeProvider
 {
     private final CompletableFuture<String> future = new CompletableFuture<>();
 
+    /**
+     * An authentication code provider, opens a JavaFX webview with a Microsoft login page
+     */
+
     public WebViewFrame()
     {
+        new WebViewFrame(600, 600);
+    }
+
+    /**
+     * An authentication code provider, opens a JavaFX webview with a Microsoft login page
+     * @param width Window width
+     * @param height Window height
+     */
+    public WebViewFrame(int width, int height)
+    {
         setTitle("Microsoft Authentication");
-        setSize(880, 600);
+        setSize(width, height);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
