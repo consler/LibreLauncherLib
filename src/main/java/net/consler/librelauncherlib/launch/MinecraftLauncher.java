@@ -196,7 +196,7 @@ public class MinecraftLauncher
             pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
             pb.redirectError(ProcessBuilder.Redirect.INHERIT);
 
-            return pb.start();
+            return pb.redirectOutput(ProcessBuilder.Redirect.DISCARD).start();
         }
         catch (Exception e)
         {

@@ -19,9 +19,9 @@ import java.util.concurrent.CompletableFuture;
 public class Main
 {
 
-    private static final String version = "26.2";
+    private static final String version = "1.8.9";
     private static final Path gameDir = Path.of("/home/consler/TEST");
-    private static final Path java25Bin = Path.of("/home/consler/.jdks/jbr-25.0.4.1/bin/java");
+    private static final Path java25Bin = Path.of("/home/consler/.jdks/corretto-1.8.0_452/bin/java");
 
     static void main(String[] args)
     {
