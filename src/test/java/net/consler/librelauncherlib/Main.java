@@ -1,6 +1,9 @@
 package net.consler.librelauncherlib;
 
 import net.consler.librelauncherlib.auth.AuthProfile;
+import net.consler.librelauncherlib.auth.MicrosoftAuthenticator;
+import net.consler.librelauncherlib.auth.WebViewFrame;
+import net.consler.librelauncherlib.exception.UserCancelledException;
 import net.consler.librelauncherlib.install.MinecraftInstaller;
 import net.consler.librelauncherlib.launch.LaunchProfile;
 import net.consler.librelauncherlib.launch.MinecraftLauncher;
@@ -10,23 +13,27 @@ import net.consler.librelauncherlib.versions.NeoforgeVersions;
 import net.consler.librelauncherlib.versions.QuiltVersions;
 
 import java.nio.file.Path;
+import java.util.concurrent.CompletableFuture;
 
 public class Main
 {
+
     private static final String version = "26.2";
     private static final Path gameDir = Path.of("/home/consler/TEST");
-    private static final Path java8Bin = Path.of("/home/consler/.jdks/corretto-1.8.0_452/bin/java");
     private static final Path java25Bin = Path.of("/home/consler/.jdks/jbr-25.0.4.1/bin/java");
 
     static void main(String[] args)
     {
-        switch (args[0])
-        {
+        if (args.length == 0) return;
+
+        switch (args[0]) {
             case "install" -> install();
             case "run" -> run();
             case "list" -> listVersions();
+            case "loginWV" -> loginWithWebView().join();
         }
     }
+
     private static void install()
     {
         new MinecraftInstaller().install(version, gameDir, ModloaderProfile.VANILLA());
@@ -45,5 +52,29 @@ public class Main
         System.out.println(QuiltVersions.getVersionsCompatibleWith(version));
         System.out.println(ForgeVersions.getVersionsCompatibleWith(version));
         System.out.println(NeoforgeVersions.getVersionsCompatibleWith(version));
+    }
+
+    private static CompletableFuture<Void> loginWithWebView()
+    {
+        return new MicrosoftAuthenticator().login(new WebViewFrame())
+                .thenAccept(profile ->
+                {
+                    System.out.println("Webview login successful!");
+                    System.out.println("Username: " + profile.username());
+                    System.out.println("UUID: " + profile.uuid());
+                    System.out.println("Refresh Token: " + profile.refreshToken());
+                })
+                .exceptionally(ex ->
+                {
+                    if (ex.getCause() instanceof UserCancelledException)
+                    {
+                        System.out.println("User closed the login frame before completing login.");
+                    }
+                    else
+                    {
+                        System.err.println("Authentication failed: " + ex.getMessage());
+                    }
+                    return null;
+                });
     }
 }

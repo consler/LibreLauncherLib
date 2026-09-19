@@ -2,14 +2,14 @@ package net.consler.librelauncherlib.auth;
 
 import java.util.UUID;
 
-public record AuthProfile(String username, String uuid, String accessToken)
+public record AuthProfile(String username, String uuid, String accessToken, String refreshToken)
 {
     public static AuthProfile Offline(String username)
     {
-        return new AuthProfile(username, UUID.nameUUIDFromBytes(username.getBytes()).toString(), "0");
+        return new AuthProfile(username, UUID.nameUUIDFromBytes(username.getBytes()).toString(), "0", "0");
     }
-    public static AuthProfile Online(String username, String uuid, String accessToken)
+    public static AuthProfile Online(String username, String uuid, String accessToken, String refreshToken)
     {
-        return new AuthProfile(username, uuid, accessToken);
+        return new AuthProfile(username, uuid, accessToken, refreshToken);
     }
 }
