@@ -53,6 +53,26 @@ public class MicrosoftAuthenticator
                 .thenApplyAsync(this::authenticateMinecraft);
     }
 
+    /**
+     * Log in with a JavaFX WebView (Microsoft login page)
+     * @return A CompletableFuture that will complete with an AuthProfile
+     */
+    public CompletableFuture<AuthProfile> loginWithJavaFXWebView()
+    {
+        return login(new WebViewFrame());
+    }
+
+    /**
+     * Log in with a JavaFX WebView (Microsoft login page)
+     * @param windowWidth width of the WebView
+     * @param windowHeight height of the WebView
+     * @return A CompletableFuture that will complete with an AuthProfile
+     */
+    public CompletableFuture<AuthProfile> loginWithJavaFXWebView(int windowWidth, int windowHeight)
+    {
+        return login(new WebViewFrame(windowWidth, windowHeight));
+    }
+
     private Map.Entry<String, String> pollForDeviceToken(String deviceCode, int interval) throws Exception
     {
         Map<String, String> params = new HashMap<>();
