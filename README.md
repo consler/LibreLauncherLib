@@ -2,7 +2,10 @@
 
 # LibreLauncherLib
 ### A library for downloading and launching Minecraft.
-![Maven Central Version](https://img.shields.io/maven-central/v/net.consler/librelauncherlib?label=latest%20version)
+[![Maven Central Version](https://img.shields.io/maven-central/v/net.consler/librelauncherlib?label=maven%20central)](https://central.sonatype.com/artifact/net.consler/librelauncherlib)
+[![javadoc](https://javadoc.io/badge2/net.consler/librelauncherlib/javadoc.svg)](https://www.javadoc.io/doc/net.consler/librelauncherlib)
+
+[![JitPack](https://jitpack.io/v/consler/LibreLauncherLib.svg)](https://jitpack.io/#consler/LibreLauncherLib)
 
 </div>
 
