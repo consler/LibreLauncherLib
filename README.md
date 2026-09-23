@@ -1,10 +1,43 @@
-LibreLauncherLib
-=================
+<div align="center">
 
-A Java library for downloading and launching Minecraft versions.
+# LibreLauncherLib
+### A library for downloading and launching Minecraft.
+![Maven Central Version](https://img.shields.io/maven-central/v/net.consler/librelauncherlib?label=latest%20version)
 
-## Usage example
-1) Install a version:
+</div>
+
+## Features
+* **Downloading any Minecraft version**
+* **Launching Minecraft with custom configurations**
+* **Support for all major mod loaders**
+* **Authenticating with Microsoft**
+* **Easy-to-use API**
+
+## Importing
+
+### Maven
+
+Add this to your `pom.xml`:
+
+```xml
+<dependencies>
+   <dependency>
+      <groupId>net.consler</groupId>
+      <artifactId>librelauncherlib</artifactId>
+      <version>1.2.0</version>
+   </dependency>
+</dependencies>
+```
+### Gradle
+Add this to your `build.gradle`:
+```groovy
+dependencies {
+    implementation 'net.consler:librelauncherlib:1.2.0'
+}
+```
+
+## Example usage
+1) Install:
     ``` java
     new MinecraftInstaller().install(version, gameDir, ModloaderProfile.VANILLA());
     ```
@@ -22,3 +55,7 @@ A Java library for downloading and launching Minecraft versions.
    System.out.println(Quilt.getVersions())
    System.out.println(Forge.getVersionsCompatibleWith("26.2"));
    ```
+   
+## More information
+* **Go to the [wiki](https://github.com/consler/LibreLauncherLib/wiki)**
+* **Read the [javadoc](https://www.javadoc.io/doc/net.consler/librelauncherlib)**
