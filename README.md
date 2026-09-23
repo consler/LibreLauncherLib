@@ -2,10 +2,12 @@
 
 # LibreLauncherLib
 ### A library for downloading and launching Minecraft.
-[![Maven Central Version](https://img.shields.io/maven-central/v/net.consler/librelauncherlib?label=maven%20central)](https://central.sonatype.com/artifact/net.consler/librelauncherlib)
-[![javadoc](https://javadoc.io/badge2/net.consler/librelauncherlib/javadoc.svg)](https://www.javadoc.io/doc/net.consler/librelauncherlib)
 
-[![JitPack](https://jitpack.io/v/consler/LibreLauncherLib.svg)](https://jitpack.io/#consler/LibreLauncherLib)
+[![Maven Central](https://img.shields.io/maven-central/v/net.consler/librelauncherlib?label=stable%20release&color=blue)](https://central.sonatype.com/artifact/net.consler/librelauncherlib)
+[![Javadoc](https://javadoc.io/badge2/net.consler/librelauncherlib/javadoc.svg)](https://www.javadoc.io/doc/net.consler/librelauncherlib)
+
+[![GitHub Last Commit](https://img.shields.io/badge/dev%20build-main--SNAPSHOT-blue)](https://jitpack.io/#net.consler/librelauncherlib)
+[![JitPack Javadoc](https://img.shields.io/badge/javadoc-main--SNAPSHOT-green)](https://javadoc.jitpack.io/net/consler/librelauncherlib/main-SNAPSHOT/javadoc/index.html)
 
 </div>
 
@@ -27,7 +29,7 @@ Add this to your `pom.xml`:
    <dependency>
       <groupId>net.consler</groupId>
       <artifactId>librelauncherlib</artifactId>
-      <version>1.2.0</version>
+      <version>1.2.1</version>
    </dependency>
 </dependencies>
 ```
@@ -35,7 +37,7 @@ Add this to your `pom.xml`:
 Add this to your `build.gradle`:
 ```groovy
 dependencies {
-    implementation 'net.consler:librelauncherlib:1.2.0'
+    implementation 'net.consler:librelauncherlib:1.2.1'
 }
 ```
 
