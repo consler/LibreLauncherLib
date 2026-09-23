@@ -157,10 +157,7 @@ public class MinecraftLauncher
                     : version;
 
             Path clientJarPath = resolveFile(gameDir, jarVersion, ".jar");
-            if (!Files.exists(clientJarPath))
-            {
-                throw new FileNotFoundException("Minecraft client JAR missing for version " + jarVersion + " at resolved path.");
-            }
+            if (!Files.exists(clientJarPath)) throw new FileNotFoundException("Minecraft client JAR missing for version " + jarVersion + " at resolved path.");
 
             String classPath = buildClassPath(allLibraries, gameDir, clientJarPath);
             Path librariesDir = gameDir.resolve("libraries");

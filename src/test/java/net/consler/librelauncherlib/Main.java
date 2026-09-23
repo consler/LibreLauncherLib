@@ -58,6 +58,7 @@ public class Main
 
     private static CompletableFuture<Void> loginWithWebView()
     {
+
         return new MicrosoftAuthenticator().login(new WebViewFrame())
                 .thenAccept(profile ->
                 {
