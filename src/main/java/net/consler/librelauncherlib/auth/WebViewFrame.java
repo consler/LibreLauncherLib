@@ -1,50 +1,27 @@
 package net.consler.librelauncherlib.auth;
 
 import javafx.application.Platform;
-import javafx.embed.swing.JFXPanel;
 import javafx.scene.Scene;
 import javafx.scene.web.WebView;
+import javafx.stage.Stage;
 
-import javax.swing.*;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 import java.util.concurrent.CompletableFuture;
 
-public class WebViewFrame extends JFrame implements AuthCodeProvider
+public class WebViewFrame implements AuthCodeProvider
 {
     private final CompletableFuture<String> future = new CompletableFuture<>();
-
-    /**
-     * An authentication code provider, opens a JavaFX webview with a Microsoft login page
-     */
+    private final int width;
+    private final int height;
 
     public WebViewFrame()
     {
         this(600, 600);
     }
 
-    /**
-     * An authentication code provider, opens a JavaFX webview with a Microsoft login page
-     * @param width Window width
-     * @param height Window height
-     */
     public WebViewFrame(int width, int height)
     {
-        setTitle("Microsoft Authentication");
-        setSize(width, height);
-        setLocationRelativeTo(null);
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-
-        setContentPane(new JFXPanel());
-
-        addWindowListener(new WindowAdapter()
-        {
-            @Override
-            public void windowClosing(WindowEvent e)
-            {
-                if (!future.isDone()) future.complete(null);
-            }
-        });
+        this.width = width;
+        this.height = height;
     }
 
     @Override
@@ -57,26 +34,33 @@ public class WebViewFrame extends JFrame implements AuthCodeProvider
     {
         Platform.runLater(() ->
         {
+            Stage stage = new Stage();
+            stage.setTitle("Microsoft Authentication");
+            stage.setWidth(width);
+            stage.setHeight(height);
+
+            stage.setOnCloseRequest(e ->
+            {
+                if (!future.isDone()) future.complete(null);
+            });
+
             WebView webView = new WebView();
             webView.getEngine().setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36");
 
-            Runnable checkUrl = () ->
-            {
+            Runnable checkUrl = () -> {
                 String loc = webView.getEngine().getLocation();
-                if (loc != null && loc.contains("code=") && !future.isDone())
-                {
+                if (loc != null && loc.contains("code=") && !future.isDone()) {
                     future.complete(loc);
-                    SwingUtilities.invokeLater(this::dispose);
+                    stage.close();
                 }
             };
 
             webView.getEngine().locationProperty().addListener((obs, oldVal, newVal) -> checkUrl.run());
             webView.getEngine().getLoadWorker().stateProperty().addListener((obs, oldState, newState) -> checkUrl.run());
 
-            ((JFXPanel) getContentPane()).setScene(new Scene(webView));
+            stage.setScene(new Scene(webView));
             webView.getEngine().load(url);
-
-            SwingUtilities.invokeLater(() -> setVisible(true));
+            stage.show();
         });
 
         return future;
