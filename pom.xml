@@ -30,15 +30,16 @@
     </developers>
 
     <scm>
-        <connection>scm:git:git://github.com/consler/LibreLauncherLib.git</connection>
-        <developerConnection>scm:git:ssh://github.com/consler/LibreLauncherLib.git</developerConnection>
+        <connection>scm:git:https://github.com/consler/LibreLauncherLib.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/consler/LibreLauncherLib.git</developerConnection>
         <url>https://github.com/consler/LibreLauncherLib</url>
     </scm>
 
     <distributionManagement>
         <repository>
             <id>central</id>
-            <url>https://central.sonatype.com/</url>
+            <name>Central Portal</name>
+            <url>https://central.sonatype.com/api/v1/publisher</url>
         </repository>
     </distributionManagement>
 
