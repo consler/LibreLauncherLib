@@ -6,7 +6,7 @@
 [![Maven Central](https://img.shields.io/maven-central/v/net.consler/librelauncherlib?label=stable%20release&color=blue)](https://central.sonatype.com/artifact/net.consler/librelauncherlib)
 [![Javadoc](https://javadoc.io/badge2/net.consler/librelauncherlib/javadoc.svg)](https://www.javadoc.io/doc/net.consler/librelauncherlib)
 
-[![GitHub Last Commit](https://img.shields.io/badge/dev%20build-main--SNAPSHOT-blue)](https://jitpack.io/#net.consler/librelauncherlib)
+[![JitPack](https://img.shields.io/badge/dev%20build-main--SNAPSHOT-blue)](https://jitpack.io/#net.consler/librelauncherlib/main-SNAPSHOT)
 [![JitPack Javadoc](https://img.shields.io/badge/javadoc-main--SNAPSHOT-green)](https://javadoc.jitpack.io/net/consler/librelauncherlib/main-SNAPSHOT/javadoc/index.html)
 
 </div>
