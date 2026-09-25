@@ -137,7 +137,7 @@ public class Main
         {
             World world = new World(Path.of("/home/consler/.local/share/LibreLauncher/26.2/saves/cart"));
 
-            System.out.println();
+            System.out.println(world);
         }
         catch (IOException e)
         {
