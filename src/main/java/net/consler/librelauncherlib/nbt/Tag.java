@@ -39,12 +39,6 @@ public abstract class Tag
         return toFormattedString(0);
     }
 
-    /**
-     * Creates a string of spaces for indentation.
-     *
-     * @param level The indentation depth.
-     * @return A string containing the required indentation.
-     */
     protected String createIndent(int level)
     {
         return "  ".repeat(Math.max(0, level));

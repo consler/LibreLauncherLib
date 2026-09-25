@@ -5,18 +5,18 @@ import net.consler.librelauncherlib.auth.MicrosoftAuthenticator;
 import net.consler.librelauncherlib.auth.WebViewFrame;
 import net.consler.librelauncherlib.exception.UserCancelledException;
 import net.consler.librelauncherlib.install.MinecraftInstaller;
-import net.consler.librelauncherlib.instance.Servers;
+import net.consler.librelauncherlib.instance.*;
 import net.consler.librelauncherlib.launch.LaunchProfile;
 import net.consler.librelauncherlib.launch.MinecraftLauncher;
-import net.consler.librelauncherlib.instance.Mod;
 import net.consler.librelauncherlib.modloader.ModloaderProfile;
-import net.consler.librelauncherlib.instance.ResourcePack;
+import net.consler.librelauncherlib.nbt.NBT;
 import net.consler.librelauncherlib.versions.ForgeVersions;
 import net.consler.librelauncherlib.versions.NeoforgeVersions;
 import net.consler.librelauncherlib.versions.QuiltVersions;
 import net.consler.librelauncherlib.versions.VanillaVersions;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
 
@@ -39,6 +39,8 @@ public class Main
             case "mod" -> modInfo();
             case "respack" -> resourcePackInfo();
             case "nbt" -> nbtParser();
+            case "datapack" -> dataPackInfo();
+            case "world" -> worldInfo();
         }
     }
 
@@ -109,8 +111,37 @@ public class Main
 
     private static void nbtParser()
     {
-        Servers server = new Servers(new File("/home/consler/Downloads/servers.dat"));
-        System.out.println(server.getServers().get(2).ip);
+        try
+        {
+            NBT level = new NBT(new File("/home/consler/.local/share/LibreLauncher/26.2/saves/cart/level.dat"));
+            System.out.println(level);
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
+    private static void dataPackInfo()
+    {
+        Datapack datapack = new Datapack(new File("/home/consler/Downloads/Nullscape_v2.0.0+26.3.zip").toPath());
+        System.out.println("Data Pack Name: " + datapack.getName());
+        System.out.println("Data Pack Description: " + datapack.getDescription());
+        System.out.println("Data Pack Format: " + datapack.getPackFormat());
+        System.out.println("Data Pack has Icon: " + datapack.hasIcon());
+    }
+
+    private static void worldInfo()
+    {
+        try
+        {
+            World world = new World(Path.of("/home/consler/.local/share/LibreLauncher/26.2/saves/cart"));
+
+            System.out.println();
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
 }

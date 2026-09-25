@@ -5,7 +5,6 @@ import com.google.gson.JsonParser;
 import net.consler.librelauncherlib.exception.DownloadFailedException;
 import net.consler.librelauncherlib.exception.HttpStatusException;
 import net.consler.librelauncherlib.exception.LibraryException;
-import net.consler.librelauncherlib.install.DownloadTask;
 
 import java.net.URI;
 import java.net.http.HttpClient;
