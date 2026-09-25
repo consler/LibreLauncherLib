@@ -3,6 +3,7 @@ package net.consler.librelauncherlib.install;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import net.consler.librelauncherlib.utill.DownloadTask;
 import net.consler.librelauncherlib.utill.SystemHelper;
 
 import java.nio.file.Path;

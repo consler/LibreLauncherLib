@@ -1,4 +1,4 @@
-package net.consler.librelauncherlib.install;
+package net.consler.librelauncherlib.utill;
 
 import java.nio.file.Path;
 

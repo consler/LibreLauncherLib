@@ -4,7 +4,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import net.consler.librelauncherlib.exception.ResourcePackReadException;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -17,7 +16,7 @@ import java.nio.file.Path;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-public class ResourcePack
+public class Datapack
 {
     private final String name;
     private JsonElement description = null;
@@ -32,10 +31,10 @@ public class ResourcePack
     }
 
     /**
-     * A resource pack (.zip file)
-     * @param packFile the .zip file. It's a path because on some systems File breaks with some characters
+     * A datapack (.zip file)
+     * @param packFile the .zip file
      */
-    public ResourcePack(Path packFile)
+    public Datapack(Path packFile)
     {
         this.name = packFile.getFileName().toString().replaceFirst("[.][^.]+$", "");
 
@@ -57,8 +56,8 @@ public class ResourcePack
         }
         catch (Exception e)
         {
-            System.err.println("Failed to read resource pack file: " + packFile.getFileName());
-            throw new RuntimeException("Failed to read resource pack: " + e.getMessage(), e);
+            System.err.println("Failed to read datapack file: " + packFile.getFileName());
+            throw new RuntimeException("Failed to read datapack: " + e.getMessage(), e);
         }
     }
 
@@ -71,30 +70,15 @@ public class ResourcePack
         {
             JsonObject packMeta = root.getAsJsonObject("pack");
 
-            if (packMeta.has("description"))
-            {
-                this.description = packMeta.get("description");
-            }
+            if (packMeta.has("description")) this.description = packMeta.get("description");
 
-            if (packMeta.has("pack_format"))
-            {
-                this.packFormat = packMeta.get("pack_format").getAsInt();
-            }
+            if (packMeta.has("pack_format")) this.packFormat = packMeta.get("pack_format").getAsInt();
 
-            if (packMeta.has("min_format"))
-            {
-                this.minFormat = parseFormatVersion(packMeta.get("min_format"), false);
-            }
+            if (packMeta.has("min_format")) this.minFormat = parseFormatVersion(packMeta.get("min_format"), false);
 
-            if (packMeta.has("max_format"))
-            {
-                this.maxFormat = parseFormatVersion(packMeta.get("max_format"), true);
-            }
+            if (packMeta.has("max_format")) this.maxFormat = parseFormatVersion(packMeta.get("max_format"), true);
 
-            if (packMeta.has("supported_formats"))
-            {
-                this.supportedFormats = parseSupportedFormats(packMeta.get("supported_formats"));
-            }
+            if (packMeta.has("supported_formats")) this.supportedFormats = parseSupportedFormats(packMeta.get("supported_formats"));
         }
     }
 
@@ -171,7 +155,7 @@ public class ResourcePack
         }
         catch (IOException e)
         {
-            throw new ResourcePackReadException("Failed to parse resource pack icon image");
+            throw new RuntimeException("Failed to parse datapack icon image", e);
         }
     }
 
@@ -187,7 +171,7 @@ public class ResourcePack
 
     public String getDescriptionAsString()
     {
-        if (description == null) return "No description provided.";
+        if (description == null) return "";
         return description.isJsonPrimitive() ? description.getAsString() : description.toString();
     }
 
