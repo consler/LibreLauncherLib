@@ -10,7 +10,7 @@
     <packaging>jar</packaging>
 
     <name>LibreLauncherLib</name>
-    <description>Library for downloading and launching Minecraft.</description>
+    <description>A powerful library for Minecraft launchers.</description>
     <url>https://github.com/consler/LibreLauncherLib</url>
 
     <licenses>
