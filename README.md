@@ -1,7 +1,7 @@
 <div align="center">
 
 # LibreLauncherLib
-### A library for downloading and launching Minecraft.
+### A powerful library for Minecraft launchers.
 
 [![Maven Central](https://img.shields.io/maven-central/v/net.consler/librelauncherlib?label=stable%20release&color=blue)](https://central.sonatype.com/artifact/net.consler/librelauncherlib)
 [![Javadoc](https://javadoc.io/badge2/net.consler/librelauncherlib/javadoc.svg)](https://www.javadoc.io/doc/net.consler/librelauncherlib)
@@ -12,10 +12,12 @@
 </div>
 
 ## Features
-* **Downloading any Minecraft version**
+* **Installing any Minecraft version**
 * **Launching Minecraft with custom configurations**
 * **Support for all major mod loaders**
 * **Authenticating with Microsoft**
+* **Handling mods, resource packs, datapacks, servers, and worlds**
+* **Handling NBT**
 * **Easy-to-use API**
 
 ## Importing
@@ -29,7 +31,7 @@ Add this to your `pom.xml`:
    <dependency>
       <groupId>net.consler</groupId>
       <artifactId>librelauncherlib</artifactId>
-      <version>1.2.1</version>
+      <version>1.3.0</version>
    </dependency>
 </dependencies>
 ```
@@ -37,7 +39,7 @@ Add this to your `pom.xml`:
 Add this to your `build.gradle`:
 ```groovy
 dependencies {
-    implementation 'net.consler:librelauncherlib:1.2.1'
+    implementation 'net.consler:librelauncherlib:1.3.0'
 }
 ```
 
@@ -55,12 +57,6 @@ dependencies {
    
    new MinecraftLauncher().launch(launchProfile, authProfile, modloaderProfile);
    ```
-3) List versions:
-   ``` java
-   System.out.println(Quilt.getVersions())
-   System.out.println(Forge.getVersionsCompatibleWith("26.2"));
-   ```
    
 ## More information
-* **Go to the [wiki](https://github.com/consler/LibreLauncherLib/wiki)**
-* **Read the [javadoc](https://www.javadoc.io/doc/net.consler/librelauncherlib)**
+**Read our [wiki](https://github.com/consler/LibreLauncherLib/wiki)!**
