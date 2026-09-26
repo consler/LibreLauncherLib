@@ -3,8 +3,8 @@ package net.consler.librelauncherlib.modloader;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import net.consler.librelauncherlib.utill.DownloadManager;
-import net.consler.librelauncherlib.utill.MavenHelper;
+import net.consler.librelauncherlib.util.DownloadManager;
+import net.consler.librelauncherlib.util.MavenHelper;
 
 import java.nio.file.Path;
 

@@ -1,6 +1,6 @@
 package net.consler.librelauncherlib.launch;
 
-import net.consler.librelauncherlib.utill.SystemHelper;
+import net.consler.librelauncherlib.util.SystemHelper;
 
 import java.nio.file.Path;
 import java.util.ArrayList;

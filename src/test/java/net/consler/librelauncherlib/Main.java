@@ -31,7 +31,8 @@ public class Main
     {
         if (args.length == 0) return;
 
-        switch (args[0]) {
+        switch (args[0])
+        {
             case "install" -> install();
             case "run" -> run();
             case "list" -> listVersions();

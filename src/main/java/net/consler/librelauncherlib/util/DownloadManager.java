@@ -1,4 +1,4 @@
-package net.consler.librelauncherlib.utill;
+package net.consler.librelauncherlib.util;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;

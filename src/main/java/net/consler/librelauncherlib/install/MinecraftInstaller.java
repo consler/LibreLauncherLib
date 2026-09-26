@@ -7,9 +7,9 @@ import net.consler.librelauncherlib.exception.InstallationException;
 import net.consler.librelauncherlib.exception.LibraryException;
 import net.consler.librelauncherlib.exception.VersionNotFoundException;
 import net.consler.librelauncherlib.modloader.*;
-import net.consler.librelauncherlib.utill.DownloadManager;
-import net.consler.librelauncherlib.utill.DownloadTask;
-import net.consler.librelauncherlib.utill.SystemHelper;
+import net.consler.librelauncherlib.util.DownloadManager;
+import net.consler.librelauncherlib.util.DownloadTask;
+import net.consler.librelauncherlib.util.SystemHelper;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
