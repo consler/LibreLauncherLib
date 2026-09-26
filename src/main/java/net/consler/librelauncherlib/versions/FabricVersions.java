@@ -13,6 +13,9 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Queries Fabric versions form meta.fabricmc.net
+ */
 public class FabricVersions
 {
     private static final String METADATA_URL = "https://meta.fabricmc.net/v2/versions/loader";

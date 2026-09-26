@@ -14,6 +14,9 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 
+/**
+ * Class for handling the server.dat file.
+ */
 public record Servers(File file)
 {
 

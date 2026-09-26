@@ -18,6 +18,9 @@ import java.util.List;
 
 import static net.consler.librelauncherlib.modloader.ModloaderProfile.*;
 
+/**
+ * Class for installing Minecraft.
+ */
 public class MinecraftInstaller
 {
 

@@ -13,6 +13,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Class for handling Minecraft worlds.
+ */
 public class World
 {
     private final NBT rootNbt;

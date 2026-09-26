@@ -18,6 +18,9 @@ import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+/**
+ * Handles the installation of Forge.
+ */
 public class ForgeInstaller
 {
     /**

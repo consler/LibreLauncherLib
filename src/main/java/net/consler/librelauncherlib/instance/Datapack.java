@@ -16,6 +16,9 @@ import java.nio.file.Path;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+/**
+ * Class for handling datapacks.
+ */
 public class Datapack
 {
     private final String name;

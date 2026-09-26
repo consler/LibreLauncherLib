@@ -8,6 +8,9 @@ import net.consler.librelauncherlib.util.DownloadManager;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+/**
+ * Handles the installation of Quilt.
+ */
 public class QuiltInstaller
 {
     /**

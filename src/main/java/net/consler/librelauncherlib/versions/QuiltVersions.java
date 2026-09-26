@@ -13,6 +13,9 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Queries Quilt versions form meta.quiltmc.org
+ */
 public class QuiltVersions
 {
     private static final String METADATA_URL = "https://meta.quiltmc.org/v3/versions/loader";

@@ -3,6 +3,11 @@ package net.consler.librelauncherlib.instance;
 import java.io.File;
 import java.nio.file.Path;
 
+/**
+ * Record representing minecraft instances.
+ *
+ * @param gameDir the directory containing the minecraft instance
+ */
 public record InstanceProfile(Path gameDir)
 {
     public Path getFolder()

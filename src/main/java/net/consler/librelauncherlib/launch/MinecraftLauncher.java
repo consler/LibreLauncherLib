@@ -23,6 +23,9 @@ import java.util.Map;
 
 import static net.consler.librelauncherlib.util.SystemHelper.getArchitecture;
 
+/**
+ * Class for launching Minecraft instances.
+ */
 public class MinecraftLauncher
 {
     /**

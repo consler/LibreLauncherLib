@@ -11,6 +11,9 @@ import java.net.URI;
 import java.net.URL;
 import java.util.*;
 
+/**
+ * Queries Minecraft versions form the official version_manifest.json
+ */
 public class VanillaVersions
 {
     private static final String METADATA_URL = "https://piston-meta.mojang.com/mc/game/version_manifest.json";

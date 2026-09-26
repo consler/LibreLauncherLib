@@ -17,6 +17,9 @@ import java.nio.file.Path;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+/**
+ * Class for handling resource packs.
+ */
 public class ResourcePack
 {
     private final String name;
