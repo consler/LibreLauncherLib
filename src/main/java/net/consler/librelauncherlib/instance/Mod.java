@@ -22,6 +22,9 @@ import java.util.jar.Manifest;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Class for handling mods.
+ */
 public class Mod
 {
     private String modId = "unknown";

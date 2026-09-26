@@ -15,7 +15,7 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 /**
- * Represents a Named Binary Tag (NBT) file structure.
+ * Represents an NBT file structure.
  * Provides methods to parse, modify, and save NBT data.
  */
 public class NBT

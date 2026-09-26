@@ -13,6 +13,9 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Queries Forge versions form maven.minecraftforge.net
+ */
 public class ForgeVersions
 {
     private static final String METADATA_URL = "https://maven.minecraftforge.net/net/minecraftforge/forge/maven-metadata.xml";

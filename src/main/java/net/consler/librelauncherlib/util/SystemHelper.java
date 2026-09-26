@@ -4,6 +4,9 @@ import java.awt.*;
 import java.net.URI;
 import java.nio.file.Path;
 
+/**
+ * Provides helper methods for system-related operations.
+ */
 public class SystemHelper
 {
     public static String getOS()

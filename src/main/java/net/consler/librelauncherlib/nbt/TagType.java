@@ -1,5 +1,8 @@
 package net.consler.librelauncherlib.nbt;
 
+/**
+ * NBT tag type enum.
+ */
 public enum TagType
 {
     END(0),

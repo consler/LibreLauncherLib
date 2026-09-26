@@ -6,8 +6,14 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Record representing a launch profile for starting Minecraft instances.
+ */
 public record LaunchProfile(int ramMb, String version, String launcherName, String launcherVersion, Path gameDir, List<String> extraJvmArgs, Path javaPath)
 {
+    /**
+     * Builder class for constructing launch profiles.
+     */
     public static class Builder
     {
         private final String version;

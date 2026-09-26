@@ -1,5 +1,8 @@
 package net.consler.librelauncherlib.util;
 
+/**
+ * Provides helper methods for Maven-related operations.
+ */
 public class MavenHelper
 {
     public static String toJarPath(String coord)
