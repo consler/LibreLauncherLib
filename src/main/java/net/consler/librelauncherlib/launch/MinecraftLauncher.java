@@ -9,8 +9,8 @@ import net.consler.librelauncherlib.exception.LaunchException;
 import net.consler.librelauncherlib.exception.LibraryException;
 import net.consler.librelauncherlib.exception.VersionJsonMissingException;
 import net.consler.librelauncherlib.modloader.ModloaderProfile;
-import net.consler.librelauncherlib.utill.MavenHelper;
-import net.consler.librelauncherlib.utill.SystemHelper;
+import net.consler.librelauncherlib.util.MavenHelper;
+import net.consler.librelauncherlib.util.SystemHelper;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -21,7 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static net.consler.librelauncherlib.utill.SystemHelper.getArchitecture;
+import static net.consler.librelauncherlib.util.SystemHelper.getArchitecture;
 
 public class MinecraftLauncher
 {

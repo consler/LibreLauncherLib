@@ -4,8 +4,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import net.consler.librelauncherlib.utill.DownloadTask;
-import net.consler.librelauncherlib.utill.DownloadManager;
+import net.consler.librelauncherlib.util.DownloadTask;
+import net.consler.librelauncherlib.util.DownloadManager;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
