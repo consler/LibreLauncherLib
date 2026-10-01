@@ -6,6 +6,8 @@ import net.consler.librelauncherlib.auth.WebViewFrame;
 import net.consler.librelauncherlib.exception.UserCancelledException;
 import net.consler.librelauncherlib.install.MinecraftInstaller;
 import net.consler.librelauncherlib.instance.*;
+import net.consler.librelauncherlib.integration.modrinth.Modrinth;
+import net.consler.librelauncherlib.integration.modrinth.ModrinthProject;
 import net.consler.librelauncherlib.launch.LaunchProfile;
 import net.consler.librelauncherlib.launch.MinecraftLauncher;
 import net.consler.librelauncherlib.modloader.ModloaderProfile;
@@ -18,6 +20,7 @@ import net.consler.librelauncherlib.versions.VanillaVersions;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public class Main
@@ -42,6 +45,7 @@ public class Main
             case "nbt" -> nbtParser();
             case "datapack" -> dataPackInfo();
             case "world" -> worldInfo();
+            case "modrinth" -> modrinth();
         }
     }
 
@@ -141,6 +145,22 @@ public class Main
             System.out.println(world);
         }
         catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static void modrinth()
+    {
+        try
+        {
+            List<ModrinthProject> projects = Modrinth.searchMods("map");
+            for (ModrinthProject project : projects)
+            {
+                System.out.println(project.title());
+            }
+        }
+        catch (IOException | InterruptedException e)
         {
             throw new RuntimeException(e);
         }
