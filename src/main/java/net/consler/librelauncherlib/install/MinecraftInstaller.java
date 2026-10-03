@@ -64,6 +64,9 @@ public class MinecraftInstaller
     {
         try
         {
+            downloadManager.setListener(listener);
+            listener.onStart();
+
             Path librariesDir = gameDir.resolve("libraries");
             Path assetsDir = gameDir.resolve("assets");
             Path nativesDir = gameDir.resolve("natives");
@@ -95,13 +98,19 @@ public class MinecraftInstaller
 
             downloadManager.shutdown();
 
-            switch (modloaderProfile.loaderId())
+            if(!modloaderProfile.loaderId().equals(VANILLA_ID))
             {
-                case FABRIC_ID -> FabricInstaller.install(modloaderProfile, gameDir, version);
-                case QUILT_ID -> QuiltInstaller.install(modloaderProfile, gameDir, version);
-                case FORGE_ID -> ForgeInstaller.install(modloaderProfile, gameDir, version, javaBin);
-                case NEOFORGE_ID -> NeoforgeInstaller.install(modloaderProfile, gameDir, version, javaBin);
+                listener.onModloaderInstallation(modloaderProfile.loaderId());
+                switch (modloaderProfile.loaderId())
+                {
+                    case FABRIC_ID -> FabricInstaller.install(modloaderProfile, gameDir, version);
+                    case QUILT_ID -> QuiltInstaller.install(modloaderProfile, gameDir, version);
+                    case FORGE_ID -> ForgeInstaller.install(modloaderProfile, gameDir, version, javaBin);
+                    case NEOFORGE_ID -> NeoforgeInstaller.install(modloaderProfile, gameDir, version, javaBin);
+                }
             }
+
+            listener.onFinish();
         }
         catch (Exception e)
         {
@@ -116,11 +125,29 @@ public class MinecraftInstaller
         for (JsonElement elem : versions)
         {
             JsonObject v = elem.getAsJsonObject();
-            if (v.get("id").getAsString().equals(versionId))
-            {
-                return v.get("url").getAsString();
-            }
+            if (v.get("id").getAsString().equals(versionId)) return v.get("url").getAsString();
         }
         throw new VersionNotFoundException("Version not found: " + versionId);
+    }
+
+    private InstallerListener listener = new InstallerListener()
+    {
+        @Override public void onStart() {}
+        @Override public void onFinish() {}
+        @Override public void onNewPercentage(int percentage) {}
+        @Override public void onNewFile(String file) {}
+        @Override public void onModloaderInstallation(String modloader) {}
+    };
+
+    public void setListener(InstallerListener listener)
+    {
+        this.listener = (listener != null) ? listener : new InstallerListener()
+        {
+            @Override public void onStart() {}
+            @Override public void onFinish() {}
+            @Override public void onNewPercentage(int percentage) {}
+            @Override public void onNewFile(String file) {}
+            @Override public void onModloaderInstallation(String modloader) {}
+        };
     }
 }
