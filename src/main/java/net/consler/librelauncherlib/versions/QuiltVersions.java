@@ -81,7 +81,7 @@ public class QuiltVersions
             conn.setRequestMethod("GET");
             conn.setRequestProperty("Accept", "application/json");
 
-            if (conn.getResponseCode() == 400) return versions;
+            if (conn.getResponseCode() == 400 || conn.getResponseCode() == 404) return versions;
 
             InputStreamReader reader = new InputStreamReader(conn.getInputStream());
 

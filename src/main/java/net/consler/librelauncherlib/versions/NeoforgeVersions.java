@@ -6,6 +6,7 @@ import org.w3c.dom.NodeList;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
@@ -47,9 +48,13 @@ public class NeoforgeVersions
             cachedVersions = versions;
             return versions;
         }
+        catch (FileNotFoundException e)
+        {
+            return new ArrayList<>();
+        }
         catch (Exception e)
         {
-            throw new ListVersionsFailureException(e.getMessage());
+            throw new ListVersionsFailureException(e.getMessage(), e);
         }
     }
 
@@ -96,7 +101,7 @@ public class NeoforgeVersions
         }
         catch (Exception e)
         {
-            throw new ListVersionsFailureException(e.getMessage());
+            throw new ListVersionsFailureException(e.getMessage(), e);
         }
 
         return versions.reversed();

@@ -6,6 +6,7 @@ import org.w3c.dom.NodeList;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
@@ -46,6 +47,10 @@ public class ForgeVersions
 
             cachedVersions = versions;
             return versions;
+        }
+        catch (FileNotFoundException e)
+        {
+            return new ArrayList<>();
         }
         catch (Exception e)
         {
