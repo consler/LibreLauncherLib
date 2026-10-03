@@ -8,25 +8,25 @@ public interface InstallerListener
     /**
      * Called when the installation starts.
      */
-    void onStart();
+    default void onStart() {}
 
     /**
      * Called when the installation finishes.
      */
-    void onFinish();
+    default void onFinish() {}
 
     /**
      * Called when a new percentage is available.
      */
-    void onNewPercentage(int percentage);
+    default void onNewPercentage(int percentage) {}
 
     /**
      * Called when a new file is being downloaded.
      */
-    void onNewFile(String file);
+    default void onNewFile(String file) {}
 
     /**
      * Called when the modloader installation starts.
      */
-    void onModloaderInstallation(String modloader);
+    default void onModloaderInstallation(String modloader) {}
 }
