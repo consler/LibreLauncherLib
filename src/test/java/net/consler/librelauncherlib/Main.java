@@ -12,10 +12,7 @@ import net.consler.librelauncherlib.launch.LaunchProfile;
 import net.consler.librelauncherlib.launch.MinecraftLauncher;
 import net.consler.librelauncherlib.modloader.ModloaderProfile;
 import net.consler.librelauncherlib.nbt.NBT;
-import net.consler.librelauncherlib.versions.ForgeVersions;
-import net.consler.librelauncherlib.versions.NeoforgeVersions;
-import net.consler.librelauncherlib.versions.QuiltVersions;
-import net.consler.librelauncherlib.versions.VanillaVersions;
+import net.consler.librelauncherlib.versions.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -65,6 +62,7 @@ public class Main
     private static void listVersions()
     {
         System.out.println(QuiltVersions.getVersionsCompatibleWith(version));
+        System.out.println(FabricVersions.getVersionsCompatibleWith(version));
         System.out.println(ForgeVersions.getVersionsCompatibleWith(version));
         System.out.println(NeoforgeVersions.getVersionsCompatibleWith(version));
         System.out.println(VanillaVersions.getVersionsFiltered(true, true, false, false));
