@@ -5,6 +5,7 @@ import com.google.gson.JsonParser;
 import net.consler.librelauncherlib.exception.DownloadFailedException;
 import net.consler.librelauncherlib.exception.HttpStatusException;
 import net.consler.librelauncherlib.exception.LibraryException;
+import net.consler.librelauncherlib.install.InstallerListener;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -21,6 +22,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Manages the downloading of files.
@@ -30,6 +32,7 @@ public class DownloadManager
     private final HttpClient httpClient;
     private final ExecutorService downloadExecutor;
     private final Semaphore downloadLimiter;
+    private InstallerListener listener;
 
     public DownloadManager()
     {
@@ -38,6 +41,11 @@ public class DownloadManager
         int threads = Math.clamp(Runtime.getRuntime().availableProcessors() * 2L, 2, 12);
         this.downloadExecutor = Executors.newFixedThreadPool(threads);
         this.downloadLimiter = new Semaphore(Math.max(4, threads / 2));
+    }
+
+    public void setListener(InstallerListener listener)
+    {
+        this.listener = listener;
     }
 
     public JsonObject fetchJson(String url)
@@ -76,7 +84,8 @@ public class DownloadManager
     public CompletableFuture<Void> downloadFileAsync(String url, Path destination)
     {
         String secureUrl = enforceHttps(url);
-        System.out.println("Downloading " + secureUrl);
+
+        if (listener != null) listener.onNewFile(destination.getFileName().toString());
 
         try
         {
@@ -145,6 +154,8 @@ public class DownloadManager
     {
         if (tasks == null || tasks.isEmpty()) return;
 
+        AtomicInteger completedCount = new AtomicInteger(0);
+        int totalTasks = tasks.size();
 
         List<CompletableFuture<Void>> futures = tasks.stream().map(task ->
                 CompletableFuture.runAsync(() ->
@@ -160,7 +171,17 @@ public class DownloadManager
                             }
                         }, downloadExecutor)
                         .thenCompose(ignored -> downloadFileAsync(task.url(), task.destination()))
-                        .whenComplete((v, e) -> downloadLimiter.release())
+                        .whenComplete((v, e) ->
+                        {
+                            downloadLimiter.release();
+
+                            if (e == null && listener != null)
+                            {
+                                int currentDone = completedCount.incrementAndGet();
+                                int percentage = (int) (((double) currentDone / totalTasks) * 100);
+                                listener.onNewPercentage(percentage);
+                            }
+                        })
                         .exceptionally(ex ->
                         {
                             Throwable cause = ex instanceof CompletionException ? ex.getCause() : ex;
