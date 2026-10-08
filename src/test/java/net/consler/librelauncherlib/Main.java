@@ -1,8 +1,8 @@
 package net.consler.librelauncherlib;
 
+import javafx.application.Platform;
 import net.consler.librelauncherlib.auth.AuthProfile;
 import net.consler.librelauncherlib.auth.MicrosoftAuthenticator;
-import net.consler.librelauncherlib.auth.WebViewFrame;
 import net.consler.librelauncherlib.exception.UserCancelledException;
 import net.consler.librelauncherlib.install.MinecraftInstaller;
 import net.consler.librelauncherlib.instance.*;
@@ -14,6 +14,7 @@ import net.consler.librelauncherlib.modloader.ModloaderProfile;
 import net.consler.librelauncherlib.nbt.NBT;
 import net.consler.librelauncherlib.versions.*;
 
+import javax.swing.*;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -37,6 +38,7 @@ public class Main
             case "run" -> run();
             case "list" -> listVersions();
             case "loginWV" -> loginWithWebView().join();
+            case "loginJFX" -> loginWithJavaFXWebView();
             case "mod" -> modInfo();
             case "respack" -> resourcePackInfo();
             case "nbt" -> nbtParser();
@@ -70,13 +72,14 @@ public class Main
 
     private static CompletableFuture<Void> loginWithWebView()
     {
-        return new MicrosoftAuthenticator().login(new WebViewFrame())
+        return new MicrosoftAuthenticator().loginWithNativeWebView()
                 .thenAccept(profile ->
                 {
                     System.out.println("Webview login successful!");
                     System.out.println("Username: " + profile.username());
                     System.out.println("UUID: " + profile.uuid());
                     System.out.println("Refresh Token: " + profile.refreshToken());
+                    System.exit(0);
                 })
                 .exceptionally(ex ->
                 {
@@ -90,6 +93,37 @@ public class Main
                     }
                     return null;
                 });
+    }
+
+    private static void loginWithJavaFXWebView()
+    {
+        CompletableFuture<Void> completionFuture = new CompletableFuture<>();
+
+        Platform.startup(() ->
+                new MicrosoftAuthenticator().loginWithJavaFXWebView()
+                        .thenAccept(profile ->
+                        {
+                            System.out.println("Username: " + profile.username());
+                            System.out.println("UUID: " + profile.uuid());
+                            System.out.println("Refresh Token: " + profile.refreshToken());
+                            completionFuture.complete(null);
+                        })
+                        .exceptionally(ex ->
+                        {
+                            Throwable cause = ex.getCause() != null ? ex.getCause() : ex;
+                            if (cause instanceof UserCancelledException)
+                            {
+                                System.out.println("User closed the login frame before completing login.");
+                            }
+                            else
+                            {
+                                System.err.println("Authentication failed: " + cause.getMessage());
+                            }
+                            completionFuture.complete(null);
+                            return null;
+                        }));
+
+        completionFuture.join();
     }
 
     private static void modInfo()
