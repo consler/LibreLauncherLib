@@ -33,19 +33,17 @@ public class MicrosoftAuthenticator
 
     private final Map<String, CompletableFuture<AuthProfile>> refreshesInFlight = new ConcurrentHashMap<>();
 
-    public record DeviceCodePrompt(String userCode, String verificationUri, String message) {}
-
     /**
      * Log in with Microsoft
-     * @param codeProvider The code provider, usually from a WebViewFrame
+     * @param codeProvider The code provider, usually from a JavaFXWebViewFrame
+     *                     or NativeWebViewFrame. Can also be custom.
      * @return A CompletableFuture that will complete with an AuthProfile
      */
     public CompletableFuture<AuthProfile> login(AuthCodeProvider codeProvider)
     {
         CookieHandler.setDefault(new CookieManager());
 
-        String loginUrl = String.format("%s?client_id=%s&redirect_uri=%s&scope=%s&response_type=code",
-                AUTH_URL, CLIENT_ID, encode(REDIRECT_URL), encode(SCOPE));
+        String loginUrl = String.format("%s?client_id=%s&redirect_uri=%s&scope=%s&response_type=code", AUTH_URL, CLIENT_ID, encode(REDIRECT_URL), encode(SCOPE));
 
         return codeProvider.getAuthCode(loginUrl)
                 .thenApply(this::extractAuthCode)
@@ -59,7 +57,16 @@ public class MicrosoftAuthenticator
      */
     public CompletableFuture<AuthProfile> loginWithJavaFXWebView()
     {
-        return login(new WebViewFrame());
+        return login(new JavaFXWebViewFrame());
+    }
+
+    /**
+     * Login with a ca.weblite.webview WebView
+     * @return A CompletableFuture that will complete with an AuthProfile
+     */
+    public CompletableFuture<AuthProfile> loginWithNativeWebView()
+    {
+        return login(new NativeWebViewFrame());
     }
 
     /**
@@ -70,33 +77,20 @@ public class MicrosoftAuthenticator
      */
     public CompletableFuture<AuthProfile> loginWithJavaFXWebView(int windowWidth, int windowHeight)
     {
-        return login(new WebViewFrame(windowWidth, windowHeight));
+        return login(new JavaFXWebViewFrame(windowWidth, windowHeight));
     }
 
-    private Map.Entry<String, String> pollForDeviceToken(String deviceCode, int interval) throws Exception
+    /**
+     * Login with a ca.weblite.webview WebView
+     * @param windowWidth width of the WebView
+     * @param windowHeight height of the WebView
+     * @return A CompletableFuture that will complete with an AuthProfile
+     */
+    public CompletableFuture<AuthProfile> loginWithNativeWebView(int windowWidth, int windowHeight)
     {
-        Map<String, String> params = new HashMap<>();
-        params.put("client_id", CLIENT_ID);
-        params.put("grant_type", "urn:ietf:params:oauth:grant-type:device_code");
-        params.put("device_code", deviceCode);
-
-        while (true)
-        {
-            Thread.sleep(interval * 1000L);
-            try
-            {
-                JsonObject response = postForm(DEVICE_TOKEN_URL, params);
-                if (response.has("access_token"))
-                {
-                    return Map.entry(response.get("access_token").getAsString(), response.get("refresh_token").getAsString());
-                }
-            }
-            catch (RuntimeException e)
-            {
-                if (!e.getMessage().contains("authorization_pending")) throw new AuthenticationException("Device code polling failed or expired", e);
-            }
-        }
+        return login(new NativeWebViewFrame(windowWidth, windowHeight));
     }
+
 
     /**
      * Log in with a refresh token. Safe to call concurrently with the same refresh token from
