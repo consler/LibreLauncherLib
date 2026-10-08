@@ -67,6 +67,13 @@
             <version>26.0.2</version>
             <scope>provided</scope>
         </dependency>
+
+        <dependency>
+            <groupId>ca.weblite</groupId>
+            <artifactId>webview</artifactId>
+            <version>1.0.10</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
     <build>

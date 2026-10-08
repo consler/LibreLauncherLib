@@ -7,18 +7,18 @@ import javafx.stage.Stage;
 
 import java.util.concurrent.CompletableFuture;
 
-public class WebViewFrame implements AuthCodeProvider
+public class JavaFXWebViewFrame implements AuthCodeProvider
 {
     private final CompletableFuture<String> future = new CompletableFuture<>();
     private final int width;
     private final int height;
 
-    public WebViewFrame()
+    public JavaFXWebViewFrame()
     {
         this(600, 600);
     }
 
-    public WebViewFrame(int width, int height)
+    public JavaFXWebViewFrame(int width, int height)
     {
         this.width = width;
         this.height = height;
@@ -47,9 +47,11 @@ public class WebViewFrame implements AuthCodeProvider
             WebView webView = new WebView();
             webView.getEngine().setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36");
 
-            Runnable checkUrl = () -> {
+            Runnable checkUrl = () ->
+            {
                 String loc = webView.getEngine().getLocation();
-                if (loc != null && loc.contains("code=") && !future.isDone()) {
+                if (loc != null && loc.contains("code=") && !future.isDone())
+                {
                     future.complete(loc);
                     stage.close();
                 }
