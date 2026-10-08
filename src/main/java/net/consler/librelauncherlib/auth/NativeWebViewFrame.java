@@ -7,6 +7,7 @@ import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
@@ -17,6 +18,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
 /**
  * Microsoft login through an embedded webview, run in a separate helper JVM
@@ -131,8 +133,33 @@ public class NativeWebViewFrame implements AuthCodeProvider
             if (value != null) command.add("-D" + key + "=" + value);
         }
 
-        command.add("-cp");
-        command.add(System.getProperty("java.class.path"));
+        command.add("-cp");String classPath = System.getProperty("java.class.path");
+
+        Function<Class<?>, String> getJarPath = (clazz) ->
+        {
+            try
+            {
+                return Path.of(clazz.getProtectionDomain().getCodeSource().getLocation().toURI()).toString();
+            }
+            catch (Exception e)
+            {
+                return null;
+            }
+        };
+
+        String webViewJar = getJarPath.apply(WebViewComponent.class);
+        if (webViewJar != null && !classPath.contains(webViewJar))
+        {
+            classPath += File.pathSeparator + webViewJar;
+        }
+
+        String launcherJar = getJarPath.apply(LoginWindow.class);
+        if (launcherJar != null && !classPath.contains(launcherJar))
+        {
+            classPath += File.pathSeparator + launcherJar;
+        }
+
+        command.add(classPath);
         command.add(LoginWindow.class.getName());
         command.add(url);
         command.add(String.valueOf(width));
