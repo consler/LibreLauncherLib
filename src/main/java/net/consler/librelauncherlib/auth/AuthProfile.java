@@ -27,11 +27,19 @@ public record AuthProfile(String username, String uuid, String accessToken, Stri
     }
 
     /**
+     * @return true if this is an offline profile (created with {@link #Offline(String)}).
+     */
+    public boolean isOffline()
+    {
+        return Instant.MAX.equals(expiresAt);
+    }
+
+    /**
      * @return true if the access token is expired, really close to expire unless an offline profile.
      */
     public boolean isExpired()
     {
-        if (expiresAt.equals(Instant.MAX)) return false; // offline profile
+        if (isOffline()) return false; // offline profile
         return Instant.now().isAfter(expiresAt.minus(EXPIRY_BUFFER));
     }
 }

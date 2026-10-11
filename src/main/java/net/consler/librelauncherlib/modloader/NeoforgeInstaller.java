@@ -35,8 +35,8 @@ public class NeoforgeInstaller
 
             ProcessBuilder pb = new ProcessBuilder(javaBin.toAbsolutePath().toString(), "-Djava.awt.headless=true", "-jar", installerPath.toAbsolutePath().toString(), "--installClient", gameDir.toAbsolutePath().toString());
             pb.directory(gameDir.toFile());
-            pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
-            pb.redirectError(ProcessBuilder.Redirect.INHERIT);
+            pb.redirectOutput(ProcessBuilder.Redirect.DISCARD);
+            pb.redirectError(ProcessBuilder.Redirect.DISCARD);
             Process process = pb.start();
             int exitCode = process.waitFor();
             if (exitCode != 0) throw new RuntimeException("NeoForge installer process failed with exit code: " + exitCode);

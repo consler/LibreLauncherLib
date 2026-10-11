@@ -24,9 +24,9 @@ import java.util.concurrent.CompletableFuture;
 public class Main
 {
 
-    private static final String version = "1.8.9";
+    private static final String version = "26.3";
     private static final Path gameDir = Path.of("/home/consler/TEST");
-    private static final Path java25Bin = Path.of("/home/consler/.jdks/corretto-1.8.0_452/bin/java");
+    private static final Path java25Bin = Path.of("/home/consler/.jdks/jbr-25.0.4.1-2/bin/java");
 
     static void main(String[] args)
     {
@@ -50,24 +50,35 @@ public class Main
 
     private static void install()
     {
-        new MinecraftInstaller().install(version, gameDir, ModloaderProfile.VANILLA());
+        new MinecraftInstaller().install("1.12.2", gameDir, new ModloaderProfile(ModloaderProfile.FORGE_ID, "1.12.2-14.23.5.2864"));
     }
 
     private static void run()
     {
-        LaunchProfile launchProfile = new LaunchProfile.Builder(version, gameDir).withJavaPath(java25Bin).build();
+        LaunchProfile launchProfile;
+        launchProfile = new LaunchProfile.Builder(version, gameDir)
+                .withJavaPath(java25Bin)
+                .withQuickPlaySingleplayer("/home/consler/TEST/saves/Demo_World")
+                .build();
         AuthProfile authProfile = AuthProfile.Offline("Consler");
 
-        new MinecraftLauncher().launch(launchProfile, authProfile, ModloaderProfile.VANILLA());
+        try
+        {
+            new MinecraftLauncher(launchProfile, authProfile, new ModloaderProfile("fabric", "0.19.5")).launch();
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     private static void listVersions()
     {
         System.out.println(QuiltVersions.getVersionsCompatibleWith(version));
         System.out.println(FabricVersions.getVersionsCompatibleWith(version));
-        System.out.println(ForgeVersions.getVersionsCompatibleWith(version));
+        System.out.println(ForgeVersions.getVersionsCompatibleWith("1.12.2"));
         System.out.println(NeoforgeVersions.getVersionsCompatibleWith(version));
-        System.out.println(VanillaVersions.getVersionsFiltered(true, true, false, false));
+        System.out.println(VanillaVersions.getVersionsFiltered(false, false, true, true));
     }
 
     private static CompletableFuture<Void> loginWithWebView()

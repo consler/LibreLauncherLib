@@ -18,46 +18,47 @@ import java.util.List;
  */
 public class World
 {
-    private final NBT rootNbt;
+    public Path worldDir;
+    public final NBT rootNbt;
 
-    private final String directoryName;
-    private BufferedImage icon = null;
+    public final String directoryName;
+    public BufferedImage icon = null;
 
-    private boolean allowCommands = false;
+    public boolean allowCommands = false;
 
-    private List<String> enabledDataPacks = new ArrayList<>();
-    private List<String> disabledDataPacks = new ArrayList<>();
+    public List<String> enabledDataPacks = new ArrayList<>();
+    public List<String> disabledDataPacks = new ArrayList<>();
 
-    private int dataVersion = 0;
+    public int dataVersion = 0;
 
-    private int difficultyByte = 0;
-    private String difficultyString = "";
-    private boolean hardcore = false;
-    private boolean locked = false;
+    public int difficultyByte = 0;
+    public String difficultyString = "";
+    public boolean hardcore = false;
+    public boolean locked = false;
 
-    private List<String> enabledFeatures = new ArrayList<>();
-    private int gameType = 0;
-    private boolean initialized = false;
-    private long lastPlayed = 0;
-    private String levelName = "Unknown World";
-    private int[] singleplayerUuid = new int[0];
-    private List<String> serverBrands = new ArrayList<>();
+    public List<String> enabledFeatures = new ArrayList<>();
+    public int gameType = 0;
+    public boolean initialized = false;
+    public long lastPlayed = 0;
+    public String levelName = "Unknown World";
+    public int[] singleplayerUuid = new int[0];
+    public List<String> serverBrands = new ArrayList<>();
 
-    private String spawnDimension = "";
-    private int spawnPitch = 0;
-    private int spawnYaw = 0;
-    private int[] spawnPos = new int[0];
+    public String spawnDimension = "";
+    public int spawnPitch = 0;
+    public int spawnYaw = 0;
+    public int[] spawnPos = new int[0];
 
-    private long time = 0;
-    private int formatVersion = 0;
+    public long time = 0;
+    public int formatVersion = 0;
 
-    private int versionId = 0;
-    private String versionName = "Unknown";
-    private String versionSeries = "";
-    private boolean versionSnapshot = false;
+    public int versionId = 0;
+    public String versionName = "Unknown";
+    public String versionSeries = "";
+    public boolean versionSnapshot = false;
 
-    private List<Integer> versionHistory = new ArrayList<>();
-    private boolean wasModded = false;
+    public List<Integer> versionHistory = new ArrayList<>();
+    public boolean wasModded = false;
 
     /**
      * Represents a local Minecraft world/save.
@@ -66,6 +67,7 @@ public class World
      */
     public World(Path worldDir) throws IOException
     {
+        this.worldDir = worldDir;
         directoryName = worldDir.getFileName().toString();
 
         Path levelDatPath = worldDir.resolve("level.dat");

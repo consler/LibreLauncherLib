@@ -152,8 +152,8 @@ public class ForgeInstaller
                 gameDir.toAbsolutePath().toString()
         );
         pb.directory(gameDir.toFile());
-        pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
-        pb.redirectError(ProcessBuilder.Redirect.INHERIT);
+        pb.redirectOutput(ProcessBuilder.Redirect.DISCARD);
+        pb.redirectError(ProcessBuilder.Redirect.DISCARD);
         Process process = pb.start();
         int exitCode = process.waitFor();
         if (exitCode != 0) throw new RuntimeException("Forge installer process failed with exit code: " + exitCode);

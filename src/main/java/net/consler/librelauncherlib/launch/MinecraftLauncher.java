@@ -1,207 +1,225 @@
 package net.consler.librelauncherlib.launch;
 
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import net.consler.librelauncherlib.auth.AuthProfile;
 import net.consler.librelauncherlib.exception.LaunchException;
-import net.consler.librelauncherlib.exception.LibraryException;
 import net.consler.librelauncherlib.exception.VersionJsonMissingException;
 import net.consler.librelauncherlib.modloader.ModloaderProfile;
-import net.consler.librelauncherlib.util.MavenHelper;
 import net.consler.librelauncherlib.util.SystemHelper;
 
-import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-
-import static net.consler.librelauncherlib.util.SystemHelper.getArchitecture;
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Class for launching Minecraft instances.
+ * <p>
+ * This is the public entry point. It checks the instance on disk, loads the version JSON and loader profile into a
+ * {@link LaunchManifest}, and lets a {@link LaunchCommandBuilder} turn that into a command line. The merged state is
+ * built once, in the constructor, so {@link #launch()} and {@link #buildCommand()} can be called any number of times.
  */
 public class MinecraftLauncher
 {
+    private static final Pattern JAVA_VERSION = Pattern.compile("version \"([^\"]+)\"");
+
+    public LaunchProfile launchProfile;
+    public AuthProfile authProfile;
+    public ModloaderProfile modloaderProfile;
+    public Path gameDir;
+    public String version;
+    public Path versionJsonPath;
+    public Path nativesDir;
+    public Path assetsDir;
+    public Path librariesDir;
+    public JsonObject versionDetails;
+    public String assetIndex;
+    /** Vanilla and loader libraries, filtered by OS rules and de-duplicated (loader entries win). */
+    public JsonArray allLibraries;
+    public String loaderId;
+    public Path loaderJsonPath;
+    public JsonObject loaderDetails;
+    public String mainClass;
+    public String jarVersion;
+    /** Minimum Java major version the manifest asks for. 8 when the manifest does not say. */
+    public int requiredJavaMajor;
+
+    private final Path logsDir;
+    private final LaunchCommandBuilder commandBuilder;
+
     /**
-     * Launches a Minecraft game process for the supplied profile.
+     * Creates a MinecraftLauncher instance
+     * @param launchProfile the launch profile to use
+     * @param authProfile the authentication profile to use
+     * @param modloaderProfile the modloader profile to use
+     * @throws LaunchException when the instance is corrupted
+     * @throws IOException when failed an I/O function
+     * @throws VersionJsonMissingException when the version JSON is missing
+     */
+    public MinecraftLauncher(LaunchProfile launchProfile, AuthProfile authProfile, ModloaderProfile modloaderProfile)
+            throws LaunchException, IOException, VersionJsonMissingException
+    {
+        if (launchProfile == null) throw new LaunchException("Launch profile was not specified.");
+        if (authProfile == null) throw new LaunchException("Auth profile was not specified.");
+        if (modloaderProfile == null) throw new LaunchException("Modloader profile was not specified.");
+
+        this.launchProfile = launchProfile;
+        this.authProfile = authProfile;
+        this.modloaderProfile = modloaderProfile;
+
+        gameDir = launchProfile.gameDir();
+        if(gameDir == null) throw new LaunchException("Game directory was not specified.");
+
+        version = launchProfile.version();
+        if(version == null) throw new LaunchException("Version was not specified.");
+
+        versionJsonPath = resolveFile(gameDir, version, ".json");
+        if (!Files.exists(versionJsonPath)) throw new VersionJsonMissingException("Version JSON missing for " + version + ". Run the installer first.");
+
+        nativesDir = gameDir.resolve("natives");
+
+        assetsDir = gameDir.resolve("assets");
+        if(!Files.exists(assetsDir)) throw new LaunchException("Assets directory missing.");
+
+        librariesDir = gameDir.resolve("libraries");
+        if(!Files.exists(librariesDir)) throw new LaunchException("Libraries directory missing.");
+
+        logsDir = gameDir.resolve("logs");
+
+        versionDetails = LaunchManifest.readJson(versionJsonPath);
+
+        loaderId = modloaderProfile.loaderId();
+        if (loaderId == null) loaderId = "vanilla";
+
+        loaderJsonPath = loaderId.equals("vanilla") ?
+                null :
+                gameDir.resolve(loaderId + "-profile.json");
+
+        if (loaderJsonPath != null && !Files.exists(loaderJsonPath))
+            throw new LaunchException("Loader profile missing for " + loaderId + " (" + loaderJsonPath + "). Run the installer first.");
+
+        loaderDetails = loaderJsonPath == null ?
+                null :
+                LaunchManifest.readJson(loaderJsonPath);
+
+        LaunchManifest manifest = new LaunchManifest(version, versionDetails, loaderDetails, loaderId,
+                LaunchManifest.featuresOf(launchProfile), SystemHelper.getOS(), launchProfile.followOsRules(),
+                launchProfile.followArchRules(), launchProfile.followOsVersionRules());
+
+        assetIndex = manifest.assetIndex();
+        mainClass = manifest.mainClass();
+        jarVersion = manifest.jarVersion();
+        requiredJavaMajor = manifest.requiredJavaMajor();
+        allLibraries = manifest.libraries();
+
+        commandBuilder = new LaunchCommandBuilder(launchProfile, authProfile, manifest,
+                gameDir, nativesDir, assetsDir, librariesDir, logsDir);
+    }
+
+    /**
+     * Launches a Minecraft game process for the supplied profile. Game output (stdout and stderr) goes to the
+     * profile's output log, by default {@code <gameDir>/logs/launcher-output.log}, which is replaced on every launch.
      *
-     * @param launchProfile launch configuration
      * @return the started game process
      */
-    public Process launch(LaunchProfile launchProfile, AuthProfile authProfile, ModloaderProfile modloaderProfile)
+    public Process launch() throws IOException
+    {
+        return buildProcess().start();
+    }
+
+    /**
+     * Prepares the game process (command, working directory, environment, output redirect) without starting it.
+     *
+     * @return the configured process builder
+     */
+    public ProcessBuilder buildProcess() throws IOException
+    {
+        List<String> command = buildCommand();
+
+        Path outputLog = launchProfile.outputLog() != null ?
+                launchProfile.outputLog() :
+                logsDir.resolve("launcher-output.log");
+
+        Path outputParent = outputLog.toAbsolutePath().getParent();
+        if (outputParent != null) Files.createDirectories(outputParent);
+
+        ProcessBuilder pb = new ProcessBuilder(command);
+        pb.directory(gameDir.toAbsolutePath().toFile());
+        pb.environment().putAll(launchProfile.environment());
+        pb.redirectErrorStream(true);
+        pb.redirectOutput(ProcessBuilder.Redirect.to(outputLog.toFile()));
+        return pb;
+    }
+
+    /**
+     * Builds the full command line without starting anything.
+     *
+     * @return the command, starting with the wrapper command (if any) and the Java executable
+     * @throws FileNotFoundException when Java, the client JAR or any required library is missing
+     * @throws IOException when the selected Java is older than the version needs, or another I/O step fails
+     */
+    public List<String> buildCommand() throws IOException
+    {
+        Path javaPath = launchProfile.javaPath();
+        if (javaPath == null || !Files.isRegularFile(javaPath))
+            throw new FileNotFoundException("Java executable not found: " + javaPath);
+
+        int javaMajor = detectJavaMajor(javaPath);
+        if (launchProfile.checkJavaVersion() && javaMajor > 0 && javaMajor < requiredJavaMajor)
+            throw new IOException("Minecraft " + version + " needs Java " + requiredJavaMajor + " or newer, but " + javaPath + " is Java " + javaMajor + ".");
+
+        Path clientJarPath = resolveFile(gameDir, jarVersion, ".jar");
+        if (!Files.exists(clientJarPath)) throw new FileNotFoundException("Minecraft client JAR missing for version " + jarVersion + " at resolved path.");
+
+        return commandBuilder.build(javaPath, javaMajor, clientJarPath);
+    }
+
+    /**
+     * Finds the major version of a Java executable by running {@code java -version}.
+     *
+     * @return the major version (8, 16, 17, 21, 25...), or -1 when it could not be determined
+     */
+    public static int detectJavaMajor(Path javaExecutable)
     {
         try
         {
-            Path gameDir = launchProfile.gameDir();
-            String version = launchProfile.version();
+            Process p = new ProcessBuilder(javaExecutable.toAbsolutePath().toString(), "-version").redirectErrorStream(true).start();
 
-            Path versionJsonPath = resolveFile(gameDir, version, ".json");
-            if (!Files.exists(versionJsonPath))
+            String output;
+            try (InputStream in = p.getInputStream())
             {
-                throw new VersionJsonMissingException("Version JSON missing for " + version + ". Run the installer first.");
+                output = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+            }
+            if (!p.waitFor(10, TimeUnit.SECONDS))
+            {
+                p.destroyForcibly();
+                return -1;
             }
 
-            Path nativesDir = gameDir.resolve("natives");
-            Path assetsDir = gameDir.resolve("assets");
+            Matcher m = JAVA_VERSION.matcher(output);
+            if (!m.find()) return -1;
 
-            JsonObject versionDetails = JsonParser.parseString(Files.readString(versionJsonPath)).getAsJsonObject();
-
-            String assetIndex = versionDetails.has("assetIndex") && versionDetails.getAsJsonObject("assetIndex").has("id")
-                    ? versionDetails.getAsJsonObject("assetIndex").get("id").getAsString()
-                    : version;
-
-            JsonArray allLibraries = versionDetails.has("libraries") ? versionDetails.getAsJsonArray("libraries") : new JsonArray();
-            String mainClass;
-
-            String loaderId = modloaderProfile.loaderId() != null ? modloaderProfile.loaderId().toLowerCase() : "vanilla";
-            JsonObject loaderDetails = null;
-
-            switch (loaderId)
-            {
-                case "fabric" ->
-                {
-                    Path fabricJsonPath = gameDir.resolve("fabric-profile.json");
-                    if (Files.exists(fabricJsonPath))
-                    {
-                        loaderDetails = JsonParser.parseString(Files.readString(fabricJsonPath)).getAsJsonObject();
-                    }
-                    mainClass = "net.fabricmc.loader.impl.launch.knot.KnotClient";
-                }
-                case "quilt" ->
-                {
-                    Path quiltJsonPath = gameDir.resolve("quilt-profile.json");
-                    if (Files.exists(quiltJsonPath))
-                    {
-                        loaderDetails = JsonParser.parseString(Files.readString(quiltJsonPath)).getAsJsonObject();
-                    }
-                    mainClass = "org.quiltmc.loader.impl.launch.knot.KnotClient";
-                }
-                case "forge" ->
-                {
-                    Path forgeJsonPath = gameDir.resolve("forge-profile.json");
-                    if (Files.exists(forgeJsonPath))
-                    {
-                        loaderDetails = JsonParser.parseString(Files.readString(forgeJsonPath)).getAsJsonObject();
-                    }
-
-                    if (loaderDetails != null && loaderDetails.has("mainClass"))
-                    {
-                        mainClass = loaderDetails.get("mainClass").getAsString();
-                    }
-                    else
-                    {
-                        mainClass = versionDetails.has("mainClass") ? versionDetails.get("mainClass").getAsString() : "cpw.mods.bootstraplauncher.BootstrapLauncher";
-                    }
-                }
-                case "neoforge" ->
-                {
-                    Path neoforgeJsonPath = gameDir.resolve("neoforge-profile.json");
-                    if (Files.exists(neoforgeJsonPath))
-                    {
-                        loaderDetails = JsonParser.parseString(Files.readString(neoforgeJsonPath)).getAsJsonObject();
-                    }
-
-                    if (loaderDetails != null && loaderDetails.has("mainClass"))
-                    {
-                        mainClass = loaderDetails.get("mainClass").getAsString();
-                    }
-                    else
-                    {
-                        mainClass = versionDetails.has("mainClass") ? versionDetails.get("mainClass").getAsString() : "net.neoforged.neoforge.bootstrap.NeoForgeBootstrap";
-                    }
-                }
-                default -> mainClass = versionDetails.get("mainClass").getAsString();
-            }
-
-            if (loaderDetails != null)
-            {
-                if (loaderDetails.has("libraries"))
-                {
-                    for (JsonElement lib : loaderDetails.getAsJsonArray("libraries"))
-                    {
-                        allLibraries.add(lib);
-                    }
-                }
-
-                if (loaderDetails.has("arguments"))
-                {
-                    JsonObject loaderArgs = loaderDetails.getAsJsonObject("arguments");
-                    if (!versionDetails.has("arguments"))
-                    {
-                        versionDetails.add("arguments", new JsonObject());
-                    }
-                    JsonObject baseArgs = versionDetails.getAsJsonObject("arguments");
-
-                    if (loaderArgs.has("jvm"))
-                    {
-                        if (!baseArgs.has("jvm")) baseArgs.add("jvm", new JsonArray());
-                        baseArgs.getAsJsonArray("jvm").addAll(loaderArgs.getAsJsonArray("jvm"));
-                    }
-                    if (loaderArgs.has("game"))
-                    {
-                        if (!baseArgs.has("game")) baseArgs.add("game", new JsonArray());
-                        baseArgs.getAsJsonArray("game").addAll(loaderArgs.getAsJsonArray("game"));
-                    }
-                }
-                else if (loaderDetails.has("minecraftArguments"))
-                {
-                    versionDetails.add("minecraftArguments", loaderDetails.get("minecraftArguments"));
-                }
-            }
-
-            String jarVersion = versionDetails.has("inheritsFrom")
-                    ? versionDetails.get("inheritsFrom").getAsString()
-                    : version;
-
-            Path clientJarPath = resolveFile(gameDir, jarVersion, ".jar");
-            if (!Files.exists(clientJarPath)) throw new FileNotFoundException("Minecraft client JAR missing for version " + jarVersion + " at resolved path.");
-
-            String classPath = buildClassPath(allLibraries, gameDir, clientJarPath);
-            Path librariesDir = gameDir.resolve("libraries");
-
-            Map<String, String> args = new HashMap<>();
-            args.put("${auth_player_name}", authProfile.username());
-            args.put("${version_name}", version);
-            args.put("${game_directory}", gameDir.toAbsolutePath().toString());
-            args.put("${assets_root}", assetsDir.toAbsolutePath().toString());
-            args.put("${assets_index_name}", assetIndex);
-            args.put("${auth_uuid}", authProfile.uuid());
-            args.put("${auth_access_token}", authProfile.accessToken());
-            args.put("${user_properties}", "{}");
-            args.put("${user_type}", "msa");
-            args.put("${version_type}", "release");
-            args.put("${natives_directory}", nativesDir.toAbsolutePath().toString());
-            args.put("${library_directory}", librariesDir.toAbsolutePath().toString());
-            args.put("${classpath_separator}", File.pathSeparator);
-            args.put("${launcher_name}", launchProfile.launcherName());
-            args.put("${launcher_version}", launchProfile.launcherVersion());
-            args.put("${classpath}", classPath);
-
-            List<String> command = new ArrayList<>();
-            command.add(launchProfile.javaPath().toAbsolutePath().toString());
-            command.add("-Xmx" + launchProfile.ramMb() + "M");
-            command.add("-Xms" + launchProfile.ramMb() + "M");
-            command.addAll(parseArguments(versionDetails, "jvm", args));
-            command.add(mainClass);
-            command.addAll(parseArguments(versionDetails, "game", args));
-
-            ProcessBuilder pb = new ProcessBuilder(command);
-            pb.directory(gameDir.toFile());
-            pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
-            pb.redirectError(ProcessBuilder.Redirect.INHERIT);
-
-            return pb.redirectOutput(ProcessBuilder.Redirect.DISCARD).start();
+            String v = m.group(1);
+            if (v.startsWith("1.")) v = v.substring(2);
+            int end = 0;
+            while (end < v.length() && Character.isDigit(v.charAt(end))) end++;
+            return end == 0 ? -1 : Integer.parseInt(v.substring(0, end));
         }
-        catch (Exception e)
+        catch (IOException e)
         {
-            if (e instanceof LibraryException) throw (LibraryException) e;
-            throw new LaunchException("Failed to launch Minecraft for version " + launchProfile.version(), e);
+            return -1;
+        }
+        catch (InterruptedException e)
+        {
+            Thread.currentThread().interrupt();
+            return -1;
         }
     }
 
@@ -214,135 +232,5 @@ public class MinecraftLauncher
         if (Files.exists(flatPath)) return flatPath;
 
         return mojangPath;
-    }
-
-    private String buildClassPath(JsonArray libraries, Path gameDir, Path clientJarPath)
-    {
-        StringBuilder sb = new StringBuilder();
-        Path librariesDir = gameDir.resolve("libraries");
-        String osName = SystemHelper.getOS();
-
-        for (JsonElement elem : libraries)
-        {
-            JsonObject lib = elem.getAsJsonObject();
-
-            if (lib.has("rules") && !isAllowedByRules(lib.getAsJsonArray("rules"), osName)) continue;
-
-            if (lib.has("downloads") && lib.getAsJsonObject("downloads").has("artifact"))
-            {
-                String path = lib.getAsJsonObject("downloads").getAsJsonObject("artifact").get("path").getAsString();
-                Path libPath = librariesDir.resolve(path);
-                if (Files.exists(libPath))
-                {
-                    sb.append(libPath.toAbsolutePath()).append(File.pathSeparator);
-                }
-            }
-            else if (lib.has("name"))
-            {
-                String mavenName = lib.get("name").getAsString();
-                String path = MavenHelper.toJarPath(mavenName);
-                Path libPath = librariesDir.resolve(path);
-                if (Files.exists(libPath))
-                {
-                    sb.append(libPath.toAbsolutePath()).append(File.pathSeparator);
-                }
-            }
-        }
-
-        sb.append(clientJarPath.toAbsolutePath());
-        return sb.toString();
-    }
-
-    private List<String> parseArguments(JsonObject versionDetails, String argType, Map<String, String> placeholders)
-    {
-        List<String> args = new ArrayList<>();
-
-        // 1.12-
-        if (argType.equals("game") && versionDetails.has("minecraftArguments"))
-        {
-            String[] legacyArgs = versionDetails.get("minecraftArguments").getAsString().split(" ");
-            for (String arg : legacyArgs)
-            {
-                args.add(replacePlaceholders(arg, placeholders));
-            }
-            return args;
-        }
-
-        // 1.13+
-        if (versionDetails.has("arguments") && versionDetails.getAsJsonObject("arguments").has(argType))
-        {
-            JsonArray jsonArgs = versionDetails.getAsJsonObject("arguments").getAsJsonArray(argType);
-            String osName = SystemHelper.getOS();
-
-            for (JsonElement elem : jsonArgs)
-            {
-                if (elem.isJsonPrimitive())
-                {
-                    args.add(replacePlaceholders(elem.getAsString(), placeholders));
-                }
-                else if (elem.isJsonObject())
-                {
-                    JsonObject argObj = elem.getAsJsonObject();
-                    if (isAllowedByRules(argObj.getAsJsonArray("rules"), osName))
-                    {
-                        JsonElement value = argObj.get("value");
-                        if (value.isJsonArray())
-                        {
-                            for (JsonElement v : value.getAsJsonArray())
-                            {
-                                args.add(replacePlaceholders(v.getAsString(), placeholders));
-                            }
-                        }
-                        else
-                        {
-                            args.add(replacePlaceholders(value.getAsString(), placeholders));
-                        }
-                    }
-                }
-            }
-        }
-
-        if (argType.equals("jvm") && args.isEmpty())
-        {
-            args.add("-Djava.library.path=" + placeholders.get("${natives_directory}"));
-            args.add("-cp");
-            args.add(placeholders.get("${classpath}"));
-        }
-
-        return args;
-    }
-
-    private String replacePlaceholders(String arg, Map<String, String> placeholders)
-    {
-        String processed = arg;
-        for (Map.Entry<String, String> entry : placeholders.entrySet())
-        {
-            processed = processed.replace(entry.getKey(), entry.getValue());
-        }
-        return processed;
-    }
-
-    private boolean isAllowedByRules(JsonArray rules, String osName)
-    {
-        boolean allowed = false;
-
-        for (JsonElement elem : rules)
-        {
-            JsonObject rule = elem.getAsJsonObject();
-            String action = rule.get("action").getAsString();
-            boolean match = true;
-
-            if (rule.has("os"))
-            {
-                JsonObject os = rule.getAsJsonObject("os");
-                if (os.has("name")) match = os.get("name").getAsString().equalsIgnoreCase(osName);
-                if (os.has("arch")) match = match && os.get("arch").getAsString().equalsIgnoreCase(getArchitecture());
-            }
-
-            if (rule.has("features")) match = false;
-
-            if (match) allowed = action.equals("allow");
-        }
-        return allowed;
     }
 }
