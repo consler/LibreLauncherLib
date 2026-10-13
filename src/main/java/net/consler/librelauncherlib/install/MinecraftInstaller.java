@@ -132,22 +132,12 @@ public class MinecraftInstaller
 
     private InstallerListener listener = new InstallerListener()
     {
-        @Override public void onStart() {}
-        @Override public void onFinish() {}
-        @Override public void onNewPercentage(int percentage) {}
-        @Override public void onNewFile(String file) {}
-        @Override public void onModloaderInstallation(String modloader) {}
     };
 
     public void setListener(InstallerListener listener)
     {
         this.listener = (listener != null) ? listener : new InstallerListener()
         {
-            @Override public void onStart() {}
-            @Override public void onFinish() {}
-            @Override public void onNewPercentage(int percentage) {}
-            @Override public void onNewFile(String file) {}
-            @Override public void onModloaderInstallation(String modloader) {}
         };
     }
 }

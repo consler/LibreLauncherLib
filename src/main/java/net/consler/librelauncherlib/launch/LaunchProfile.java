@@ -38,6 +38,7 @@ import java.util.Objects;
  * @param checkJavaVersion refuse to start when {@code javaPath} is older than the version needs
  * @param followOsRules refuse to start when a disapproved OS tries to launch
  * @param followArchRules refuse to start when a disapproved architecture tries to launch
+ * @param linkProcess whether to make the process a child of the launcher
  */
 public record LaunchProfile(
         int ramMb,
@@ -62,7 +63,8 @@ public record LaunchProfile(
         boolean checkJavaVersion,
         boolean followOsRules,
         boolean followArchRules,
-        boolean followOsVersionRules)
+        boolean followOsVersionRules,
+        boolean linkProcess)
 {
     /**
      * A world or server to join as soon as the game has started.
@@ -168,6 +170,7 @@ public record LaunchProfile(
         private boolean followOsRules = true;
         private boolean followArchRules = true;
         private boolean followOsVersionRules = true;
+        private boolean linkProcess = true;
 
         public Builder(String version, Path gameDir)
         {
@@ -390,13 +393,23 @@ public record LaunchProfile(
         }
 
         /**
+         * Whether to inherit the process
+         */
+        public Builder linkProcess(boolean linkProcess)
+        {
+            this.linkProcess = linkProcess;
+            return this;
+        }
+
+        /**
          * Builds the configured launch profile.
          */
         public LaunchProfile build()
         {
-            return new LaunchProfile(ramMb, version, launcherName, launcherVersion, gameDir, extraJvmArgs, javaPath,
-                    initialRamMb, extraGameArgs, width, height, fullscreen, demo, quickPlay, xuid, clientId,
-                    wrapperCommand, environment, outputLog, checkJavaVersion, followOsRules, followArchRules, followOsVersionRules);
+            return new LaunchProfile(ramMb, version, launcherName, launcherVersion, gameDir, extraJvmArgs,
+                    javaPath, initialRamMb, extraGameArgs, width, height, fullscreen, demo, quickPlay, xuid,
+                    clientId, wrapperCommand, environment, outputLog, checkJavaVersion, followOsRules,
+                    followArchRules, followOsVersionRules, linkProcess);
         }
     }
 }

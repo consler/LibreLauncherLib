@@ -155,6 +155,7 @@ public class MinecraftLauncher
         pb.environment().putAll(launchProfile.environment());
         pb.redirectErrorStream(true);
         pb.redirectOutput(ProcessBuilder.Redirect.to(outputLog.toFile()));
+        if(launchProfile.linkProcess()) pb.redirectInput(ProcessBuilder.Redirect.DISCARD);
         return pb;
     }
 
