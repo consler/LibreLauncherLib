@@ -24,6 +24,14 @@ jobs:
           gpg-private-key: ${{ secrets.GPG_SIGNING_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
 
+      - name: Install Maven
+        run: |
+          MAVEN_VERSION=3.9.11
+          curl -fsSL "https://archive.apache.org/dist/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz" | tar xz
+          sudo mv apache-maven-${MAVEN_VERSION} /opt/maven
+          sudo ln -sf /opt/maven/bin/mvn /usr/local/bin/mvn
+          mvn -version
+
       - name: Deploy to Maven Central
         run: mvn --batch-mode clean deploy
         env:
