@@ -30,7 +30,6 @@ class AssetProcessor
             if (assetIndexElement == null) return;
 
             String id = assetIndexElement.get("id").getAsString();
-            String url = assetIndexElement.get("url").getAsString();
 
             Path indexesDir = assetsDir.resolve("indexes");
             Path objectsDir = assetsDir.resolve("objects");
@@ -38,21 +37,21 @@ class AssetProcessor
             Files.createDirectories(objectsDir);
 
             Path indexFile = indexesDir.resolve(id + ".json");
-            downloadManager.downloadFile(url, indexFile);
+            downloadManager.downloadFile(DownloadTask.of(assetIndexElement, indexFile));
 
             JsonObject assetIndex = JsonParser.parseString(Files.readString(indexFile)).getAsJsonObject();
             JsonObject objects = assetIndex.getAsJsonObject("objects");
 
             for (Map.Entry<String, JsonElement> entry : objects.entrySet())
             {
-                String hash = entry.getValue().getAsJsonObject().get("hash").getAsString();
+                JsonObject object = entry.getValue().getAsJsonObject();
+                String hash = object.get("hash").getAsString();
+                long size = object.get("size").getAsLong();
                 String subHash = hash.substring(0, 2);
                 String assetUrl = RESOURCES_URL + subHash + "/" + hash;
                 Path target = objectsDir.resolve(subHash).resolve(hash);
 
-                Files.createDirectories(target.getParent());
-
-                tasks.add(new DownloadTask(assetUrl, target));
+                tasks.add(new DownloadTask(assetUrl, target, hash, size));
             }
         }
         catch (Exception e)

@@ -15,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import static net.consler.librelauncherlib.modloader.ModloaderProfile.*;
 
@@ -25,6 +26,7 @@ public class MinecraftInstaller
 {
 
     private static final String MANIFEST_URL = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json";
+    private static final Set<String> SUPPORTED_LOADERS = Set.of(VANILLA_ID, FABRIC_ID, QUILT_ID, FORGE_ID, NEOFORGE_ID);
 
     private final DownloadManager downloadManager;
     private final LibraryProcessor libraryProcessor;
@@ -64,6 +66,8 @@ public class MinecraftInstaller
     {
         try
         {
+            if (!SUPPORTED_LOADERS.contains(modloaderProfile.loaderId())) throw new IllegalArgumentException("Unsupported modloader: " + modloaderProfile.loaderId());
+
             downloadManager.setListener(listener);
             listener.onStart();
 
@@ -79,14 +83,12 @@ public class MinecraftInstaller
             String versionJsonUrl = findVersionUrl(manifest, version);
 
             JsonObject versionDetails = downloadManager.fetchJson(versionJsonUrl);
-            Files.writeString(gameDir.resolve(version + ".json"), versionDetails.toString());
 
             List<DownloadTask> tasks = new ArrayList<>();
             List<Path> nativeZipsToExtract = new ArrayList<>();
 
             JsonObject downloads = versionDetails.getAsJsonObject("downloads");
-            String clientUrl = downloads.getAsJsonObject("client").get("url").getAsString();
-            tasks.add(new DownloadTask(clientUrl, gameDir.resolve(version + ".jar")));
+            tasks.add(DownloadTask.of(downloads.getAsJsonObject("client"), gameDir.resolve(version + ".jar")));
 
             libraryProcessor.processLibraries(versionDetails.getAsJsonArray("libraries"), librariesDir, tasks, nativeZipsToExtract);
 
@@ -96,7 +98,7 @@ public class MinecraftInstaller
 
             nativeExtractor.extractNatives(nativeZipsToExtract, nativesDir);
 
-            downloadManager.shutdown();
+            Files.writeString(gameDir.resolve(version + ".json"), versionDetails.toString());
 
             if(!modloaderProfile.loaderId().equals(VANILLA_ID))
             {
@@ -107,6 +109,7 @@ public class MinecraftInstaller
                     case QUILT_ID -> QuiltInstaller.install(modloaderProfile, gameDir, version);
                     case FORGE_ID -> ForgeInstaller.install(modloaderProfile, gameDir, version, javaBin);
                     case NEOFORGE_ID -> NeoforgeInstaller.install(modloaderProfile, gameDir, version, javaBin);
+                    default -> throw new IllegalArgumentException("Unsupported modloader: " + modloaderProfile.loaderId());
                 }
             }
 

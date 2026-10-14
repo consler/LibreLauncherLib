@@ -22,6 +22,18 @@ public class SystemHelper
         return System.getProperty("os.arch");
     }
 
+    public static String getManifestArchitecture()
+    {
+        String arch = getArchitecture().toLowerCase();
+        return switch (arch)
+        {
+            case "aarch64", "arm64" -> "arm64";
+            case "x86", "i386", "i686" -> "x86";
+            case "amd64", "x86_64" -> "x86_64";
+            default -> arch;
+        };
+    }
+
     public static void openBrowser(String url)
     {
         try

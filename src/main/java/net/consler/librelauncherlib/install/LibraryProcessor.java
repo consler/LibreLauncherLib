@@ -13,10 +13,14 @@ class LibraryProcessor
 {
 
     private final String osName;
+    private final String archName;
+    private final String archBits;
 
     public LibraryProcessor()
     {
         this.osName = SystemHelper.getOS();
+        this.archName = SystemHelper.getManifestArchitecture();
+        this.archBits = SystemHelper.getArchitecture().contains("64") ? "64" : "32";
     }
 
     public void processLibraries(JsonArray libraries, Path librariesDir, List<DownloadTask> tasks, List<Path> nativeZips)
@@ -29,32 +33,35 @@ class LibraryProcessor
             JsonObject downloads = lib.getAsJsonObject("downloads");
             if (downloads == null) continue;
 
-            // 1.19+
             if (downloads.has("artifact"))
             {
                 JsonObject artifact = downloads.getAsJsonObject("artifact");
-                String pathStr = artifact.get("path").getAsString();
-                Path target = librariesDir.resolve(pathStr);
+                Path target = librariesDir.resolve(artifact.get("path").getAsString());
 
-                tasks.add(new DownloadTask(artifact.get("url").getAsString(), target));
+                tasks.add(DownloadTask.of(artifact, target));
 
-                if (pathStr.contains("natives-" + this.osName) || pathStr.contains("native-" + this.osName)) nativeZips.add(target);
+                if (isNativeLibrary(lib)) nativeZips.add(target);
             }
 
-            // 1.18-
             if (lib.has("natives") && lib.getAsJsonObject("natives").has(this.osName))
             {
-                String classifier = lib.getAsJsonObject("natives").get(this.osName).getAsString();
+                String classifier = lib.getAsJsonObject("natives").get(this.osName).getAsString().replace("${arch}", this.archBits);
                 if (downloads.has("classifiers") && downloads.getAsJsonObject("classifiers").has(classifier))
                 {
                     JsonObject nativeArtifact = downloads.getAsJsonObject("classifiers").getAsJsonObject(classifier);
                     Path target = librariesDir.resolve(nativeArtifact.get("path").getAsString());
 
-                    tasks.add(new DownloadTask(nativeArtifact.get("url").getAsString(), target));
+                    tasks.add(DownloadTask.of(nativeArtifact, target));
                     nativeZips.add(target);
                 }
             }
         }
+    }
+
+    private boolean isNativeLibrary(JsonObject lib)
+    {
+        String[] coordinates = lib.get("name").getAsString().split(":");
+        return coordinates.length >= 4 && coordinates[3].startsWith("native");
     }
 
     private boolean isAllowedByRules(JsonArray rules)
@@ -82,7 +89,7 @@ class LibraryProcessor
                 if (osObj.has("arch"))
                 {
                     String ruleArch = osObj.get("arch").getAsString();
-                    if (!ruleArch.equalsIgnoreCase(System.getProperty("os.arch"))) match = false;
+                    if (!ruleArch.equalsIgnoreCase(this.archName)) match = false;
                 }
             }
 

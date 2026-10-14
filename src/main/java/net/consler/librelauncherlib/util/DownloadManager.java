@@ -7,6 +7,8 @@ import net.consler.librelauncherlib.exception.HttpStatusException;
 import net.consler.librelauncherlib.exception.LibraryException;
 import net.consler.librelauncherlib.install.InstallerListener;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -14,14 +16,21 @@ import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.HexFormat;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -29,18 +38,17 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class DownloadManager
 {
+    private static final int MAX_CONCURRENT_DOWNLOADS = 16;
+    private static final int MAX_ATTEMPTS = 3;
+
     private final HttpClient httpClient;
-    private final ExecutorService downloadExecutor;
     private final Semaphore downloadLimiter;
     private InstallerListener listener;
 
     public DownloadManager()
     {
         this.httpClient = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).connectTimeout(Duration.ofSeconds(10)).build();
-
-        int threads = Math.clamp(Runtime.getRuntime().availableProcessors() * 2L, 2, 12);
-        this.downloadExecutor = Executors.newFixedThreadPool(threads);
-        this.downloadLimiter = new Semaphore(Math.max(4, threads / 2));
+        this.downloadLimiter = new Semaphore(MAX_CONCURRENT_DOWNLOADS);
     }
 
     public void setListener(InstallerListener listener)
@@ -54,7 +62,7 @@ public class DownloadManager
 
         try
         {
-            HttpRequest request = HttpRequest.newBuilder().uri(URI.create(secureUrl)).GET().build();
+            HttpRequest request = HttpRequest.newBuilder().uri(URI.create(secureUrl)).timeout(Duration.ofSeconds(30)).GET().build();
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() < 200 || response.statusCode() >= 300) throw new HttpStatusException(response.statusCode(), "Failed to fetch JSON: " + secureUrl);
 
@@ -62,139 +70,207 @@ public class DownloadManager
         }
         catch (Exception e)
         {
+            if (e instanceof InterruptedException) Thread.currentThread().interrupt();
             if (e instanceof LibraryException) throw (LibraryException) e;
             throw new LibraryException("Failed to fetch JSON from " + secureUrl, e);
         }
     }
 
+    /**
+     * Downloads a file and blocks until it is finished. Files that already exist are skipped.
+     *
+     * @param url The URL to download the file from
+     * @param destination The local path the file will be saved to
+     */
     public void downloadFile(String url, Path destination)
     {
-        try
-        {
-            downloadFileAsync(url, destination).join();
-        }
-        catch (Exception e)
-        {
-            Throwable cause = e instanceof CompletionException ? e.getCause() : e;
-            if (cause instanceof RuntimeException) throw (RuntimeException) cause;
-            throw new DownloadFailedException("Failed to install from " + url, cause);
-        }
+        downloadFile(new DownloadTask(url, destination));
     }
 
-    public CompletableFuture<Void> downloadFileAsync(String url, Path destination)
+    /**
+     * Downloads a file and blocks until it is finished. Files that already exist with the expected size are skipped.
+     * If the task has a size or SHA-1 hash, the downloaded file is verified against it.
+     *
+     * @param task The file to download
+     */
+    public void downloadFile(DownloadTask task)
     {
-        String secureUrl = enforceHttps(url);
-
-        if (listener != null) listener.onNewFile(destination.getFileName().toString());
+        String secureUrl = enforceHttps(task.url());
+        Path destination = task.destination();
 
         try
         {
-            if (Files.exists(destination) && Files.size(destination) > 0)
-            {
-                return CompletableFuture.completedFuture(null);
-            }
+            if (isValid(task)) return;
+
+            if (listener != null) listener.onNewFile(destination.getFileName().toString());
             Files.createDirectories(destination.getParent());
         }
-        catch (Exception e)
+        catch (IOException e)
         {
-            return CompletableFuture.failedFuture(new DownloadFailedException("Failed to prepare destination for " + secureUrl, e));
+            throw new DownloadFailedException("Failed to prepare destination for " + secureUrl, e);
         }
 
         Path temp = destination.resolveSibling(destination.getFileName().toString() + ".part");
-        return downloadWithRetryAsync(secureUrl, destination, temp, 1, 3);
-    }
+        HttpRequest request = HttpRequest.newBuilder().uri(URI.create(secureUrl)).timeout(Duration.ofSeconds(30)).GET().build();
 
-    private CompletableFuture<Void> downloadWithRetryAsync(String url, Path destination, Path temp, int attempt, int maxRetries)
-    {
-        HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).timeout(Duration.ofSeconds(30)).GET().build();
-
-        return httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofFile(temp))
-                .thenCompose(response ->
-                {
-                    int status = response.statusCode();
-                    if (status >= 200 && status < 300)
-                    {
-                        try
-                        {
-                            Files.move(response.body(), destination, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-                            return CompletableFuture.completedFuture(null);
-                        }
-                        catch (Exception e)
-                        {
-                            deleteQuietly(temp);
-                            return CompletableFuture.failedFuture(new DownloadFailedException("Failed to move downloaded file for " + url, e));
-                        }
-                    }
-                    else
-                    {
-                        deleteQuietly(temp);
-                        return retryOrFail(url, destination, temp, attempt, maxRetries, new HttpStatusException(status, "HTTP Server responded with status code: " + status));
-                    }
-                })
-                .exceptionallyCompose(ex ->
-                {
-                    deleteQuietly(temp);
-                    return retryOrFail(url, destination, temp, attempt, maxRetries, ex);
-                });
-    }
-
-    private CompletableFuture<Void> retryOrFail(String url, Path destination, Path temp, int attempt, int maxRetries, Throwable cause)
-    {
-        if (attempt < maxRetries)
+        for (int attempt = 1; ; attempt++)
         {
-            long delay = 300L * attempt;
-            return CompletableFuture.supplyAsync(() -> null, CompletableFuture.delayedExecutor(delay, TimeUnit.MILLISECONDS, downloadExecutor)).thenCompose(ignored -> downloadWithRetryAsync(url, destination, temp, attempt + 1, maxRetries));
-        }
+            int status = -1;
 
-        Throwable actualCause = cause instanceof CompletionException ? cause.getCause() : cause;
-        return CompletableFuture.failedFuture(new DownloadFailedException("Failed to download " + url, actualCause));
+            try
+            {
+                HttpResponse<Path> response = httpClient.send(request, HttpResponse.BodyHandlers.ofFile(temp, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING));
+                status = response.statusCode();
+                if (status < 200 || status >= 300) throw new HttpStatusException(status, "HTTP Server responded with status code: " + status);
+
+                verify(task, temp);
+                Files.move(temp, destination, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+                return;
+            }
+            catch (InterruptedException e)
+            {
+                deleteQuietly(temp);
+                Thread.currentThread().interrupt();
+                throw new DownloadFailedException("Download interrupted: " + secureUrl, e);
+            }
+            catch (Exception e)
+            {
+                deleteQuietly(temp);
+                if (attempt >= MAX_ATTEMPTS || isPermanentFailure(status)) throw new DownloadFailedException("Failed to download " + secureUrl, e);
+
+                pause(300L * attempt);
+            }
+        }
     }
 
+    /**
+     * Downloads multiple files in parallel and blocks until all of them are finished.
+     * The first failed download cancels all remaining ones and is rethrown.
+     *
+     * @param tasks The files to download
+     */
     public void downloadBatch(List<DownloadTask> tasks)
     {
         if (tasks == null || tasks.isEmpty()) return;
 
+        // Different names can point to the same file (e.g. identical asset hashes), downloading them concurrently would corrupt the shared .part file
+        Map<Path, DownloadTask> uniqueTasks = new LinkedHashMap<>();
+        for (DownloadTask task : tasks) uniqueTasks.putIfAbsent(task.destination(), task);
+
+        int totalTasks = uniqueTasks.size();
         AtomicInteger completedCount = new AtomicInteger(0);
-        int totalTasks = tasks.size();
+        AtomicInteger lastPercentage = new AtomicInteger(-1);
 
-        List<CompletableFuture<Void>> futures = tasks.stream().map(task ->
-                CompletableFuture.runAsync(() ->
-                        {
-                            try
-                            {
-                                downloadLimiter.acquire();
-                            }
-                            catch (InterruptedException e)
-                            {
-                                Thread.currentThread().interrupt();
-                                throw new RuntimeException(e);
-                            }
-                        }, downloadExecutor)
-                        .thenCompose(ignored -> downloadFileAsync(task.url(), task.destination()))
-                        .whenComplete((v, e) ->
-                        {
-                            downloadLimiter.release();
+        try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor())
+        {
+            ExecutorCompletionService<Void> completionService = new ExecutorCompletionService<>(executor);
+            List<Future<Void>> futures = new ArrayList<>();
 
-                            if (e == null && listener != null)
-                            {
-                                int currentDone = completedCount.incrementAndGet();
-                                int percentage = (int) (((double) currentDone / totalTasks) * 100);
-                                listener.onNewPercentage(percentage);
-                            }
-                        })
-                        .exceptionally(ex ->
-                        {
-                            Throwable cause = ex instanceof CompletionException ? ex.getCause() : ex;
-                            throw new DownloadFailedException("Failed to download " + task.url(), cause);
-                        })
-        ).toList();
+            for (DownloadTask task : uniqueTasks.values())
+            {
+                futures.add(completionService.submit(() ->
+                {
+                    downloadLimiter.acquire();
+                    try
+                    {
+                        downloadFile(task);
+                    }
+                    finally
+                    {
+                        downloadLimiter.release();
+                    }
 
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+                    int percentage = completedCount.incrementAndGet() * 100 / totalTasks;
+                    int previous = lastPercentage.getAndAccumulate(percentage, Math::max);
+                    if (listener != null && percentage > previous) listener.onNewPercentage(percentage);
+
+                    return null;
+                }));
+            }
+
+            for (int i = 0; i < totalTasks; i++)
+            {
+                try
+                {
+                    completionService.take().get();
+                }
+                catch (ExecutionException e)
+                {
+                    cancelAll(futures);
+                    Throwable cause = e.getCause();
+                    if (cause instanceof RuntimeException) throw (RuntimeException) cause;
+                    throw new DownloadFailedException("Failed to download files", cause);
+                }
+                catch (InterruptedException e)
+                {
+                    cancelAll(futures);
+                    Thread.currentThread().interrupt();
+                    throw new DownloadFailedException("Download interrupted", e);
+                }
+            }
+        }
     }
 
-    public void shutdown()
+    private void cancelAll(List<Future<Void>> futures)
     {
-        downloadExecutor.shutdown();
+        for (Future<Void> future : futures) future.cancel(true);
+    }
+
+    private boolean isValid(DownloadTask task)
+    {
+        try
+        {
+            Path destination = task.destination();
+            if (!Files.isRegularFile(destination)) return false;
+
+            long size = Files.size(destination);
+            return task.size() >= 0 ? size == task.size() : size > 0;
+        }
+        catch (IOException e)
+        {
+            return false;
+        }
+    }
+
+    private void verify(DownloadTask task, Path file) throws IOException
+    {
+        if (task.size() >= 0 && Files.size(file) != task.size()) throw new IOException("Size mismatch for " + task.url());
+        if (task.sha1() != null && !task.sha1().equalsIgnoreCase(sha1Of(file))) throw new IOException("Checksum mismatch for " + task.url());
+    }
+
+    private String sha1Of(Path file) throws IOException
+    {
+        try (InputStream in = Files.newInputStream(file))
+        {
+            MessageDigest digest = MessageDigest.getInstance("SHA-1");
+            byte[] buffer = new byte[8192];
+            int read;
+            while ((read = in.read(buffer)) != -1) digest.update(buffer, 0, read);
+
+            return HexFormat.of().formatHex(digest.digest());
+        }
+        catch (NoSuchAlgorithmException e)
+        {
+            throw new IOException("SHA-1 is not available", e);
+        }
+    }
+
+    private boolean isPermanentFailure(int status)
+    {
+        return status >= 400 && status < 500 && status != 408 && status != 429;
+    }
+
+    private void pause(long millis)
+    {
+        try
+        {
+            Thread.sleep(millis);
+        }
+        catch (InterruptedException e)
+        {
+            Thread.currentThread().interrupt();
+            throw new DownloadFailedException("Download interrupted", e);
+        }
     }
 
     private String enforceHttps(String url)
