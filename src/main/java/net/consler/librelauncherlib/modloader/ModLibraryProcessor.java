@@ -8,7 +8,7 @@ import net.consler.librelauncherlib.util.MavenHelper;
 
 import java.nio.file.Path;
 
-class LibraryProcessor
+class ModLibraryProcessor
 {
     public void processLibraries(JsonArray libraries, Path librariesDir)
     {

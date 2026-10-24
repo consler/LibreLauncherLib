@@ -27,12 +27,13 @@ public class FabricInstaller
             DownloadManager downloadManager = new DownloadManager();
             Path profilePath = gameDir.resolve("fabric-profile.json");
 
+            Files.deleteIfExists(profilePath);
             downloadManager.downloadFile("https://meta.fabricmc.net/v2/versions/loader/" + minecraftVersion + "/" + modloaderProfile.loaderVersion() + "/profile/json", profilePath);
 
             JsonObject profileJson = JsonParser.parseString(Files.readString(profilePath)).getAsJsonObject();
             JsonArray libraries = profileJson.getAsJsonArray("libraries");
 
-            new LibraryProcessor().processLibraries(libraries, gameDir.resolve("libraries"));
+            new ModLibraryProcessor().processLibraries(libraries, gameDir.resolve("libraries"));
         }
         catch (Exception e)
         {

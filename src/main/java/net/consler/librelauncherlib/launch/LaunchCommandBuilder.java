@@ -1,6 +1,7 @@
 package net.consler.librelauncherlib.launch;
 
 import net.consler.librelauncherlib.auth.AuthProfile;
+import net.consler.librelauncherlib.instance.VersionManifest;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -17,9 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Turns a {@link LaunchManifest} plus the launch and auth profiles into the command line that starts the game.
- * <p>
- * Nothing here changes state between calls to {@link #build}, so it can be called any number of times.
+ * Turns a VersionManifest plus the launch and auth profiles into the command line that starts the game.
  */
 final class LaunchCommandBuilder
 {
@@ -33,14 +32,14 @@ final class LaunchCommandBuilder
 
     private final LaunchProfile launchProfile;
     private final AuthProfile authProfile;
-    private final LaunchManifest manifest;
+    private final VersionManifest manifest;
     private final Path gameDir;
     private final Path nativesDir;
     private final Path assetsDir;
     private final Path librariesDir;
     private final Path logsDir;
 
-    LaunchCommandBuilder(LaunchProfile launchProfile, AuthProfile authProfile, LaunchManifest manifest,
+    LaunchCommandBuilder(LaunchProfile launchProfile, AuthProfile authProfile, VersionManifest manifest,
                          Path gameDir, Path nativesDir, Path assetsDir, Path librariesDir, Path logsDir)
     {
         this.launchProfile = launchProfile;
@@ -116,7 +115,7 @@ final class LaunchCommandBuilder
         StringBuilder sb = new StringBuilder();
         List<String> missing = new ArrayList<>();
 
-        for (LaunchManifest.ClasspathEntry entry : manifest.classpathEntries())
+        for (VersionManifest.ClasspathEntry entry : manifest.classpathEntries())
         {
             Path libPath = librariesDir.resolve(entry.path());
             if (Files.exists(libPath))

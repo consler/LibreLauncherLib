@@ -153,7 +153,6 @@ public class DownloadManager
     {
         if (tasks == null || tasks.isEmpty()) return;
 
-        // Different names can point to the same file (e.g. identical asset hashes), downloading them concurrently would corrupt the shared .part file
         Map<Path, DownloadTask> uniqueTasks = new LinkedHashMap<>();
         for (DownloadTask task : tasks) uniqueTasks.putIfAbsent(task.destination(), task);
 

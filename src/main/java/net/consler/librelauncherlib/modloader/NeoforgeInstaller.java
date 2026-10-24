@@ -28,6 +28,8 @@ public class NeoforgeInstaller
             String neoForgeVersion = modloaderProfile.loaderVersion();
             String installerUrl = "https://maven.neoforged.net/releases/net/neoforged/neoforge/" + neoForgeVersion + "/neoforge-" + neoForgeVersion + "-installer.jar";
             Path installerPath = gameDir.resolve("neoforge-installer.jar");
+
+            Files.deleteIfExists(installerPath);
             new DownloadManager().downloadFile(installerUrl, installerPath);
 
             Path launcherProfiles = gameDir.resolve("launcher_profiles.json");

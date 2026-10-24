@@ -1,4 +1,4 @@
-package net.consler.librelauncherlib.launch;
+package net.consler.librelauncherlib.instance;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -6,6 +6,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import net.consler.librelauncherlib.exception.LaunchException;
+import net.consler.librelauncherlib.launch.LaunchProfile;
+import net.consler.librelauncherlib.util.DownloadTask;
 import net.consler.librelauncherlib.util.MavenHelper;
 
 import java.io.IOException;
@@ -23,17 +25,16 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 import static net.consler.librelauncherlib.util.SystemHelper.getArchitecture;
+import static net.consler.librelauncherlib.util.SystemHelper.getOS;
 
 /**
- * Everything the vanilla version JSON and the (optional) loader profile say, merged once and evaluated for this
- * machine: which libraries apply, which arguments apply, which Java is needed.
- * <p>
- * This class only reads and interprets JSON. Turning it into a command line is {@link LaunchCommandBuilder}'s job.
+ * Version JSON
  */
-final class LaunchManifest
+public final class VersionManifest
 {
     private static final Pattern PLACEHOLDER = Pattern.compile("\\$\\{([^}]+)}");
     private static final Set<String> KNOWN_ARCHES = Set.of("x86", "x86_64", "arm64");
+    private static final String DEFAULT_LIBRARY_URL = "https://libraries.minecraft.net/";
 
     /**
      * A library jar the classpath needs.
@@ -41,7 +42,29 @@ final class LaunchManifest
      * @param path path below the libraries directory
      * @param serverOnly old Forge profiles flag server-only libraries ("clientreq": false), which may be absent
      */
-    record ClasspathEntry(String path, boolean serverOnly) {}
+    public record ClasspathEntry(String path, boolean serverOnly) {}
+
+    /**
+     * A library file that has to be downloaded.
+     *
+     * @param path path below the libraries directory
+     * @param url where to download the file from
+     * @param sha1 the expected SHA-1 hash, or null if unknown
+     * @param size the expected size in bytes, or -1 if unknown
+     * @param nativeArchive whether the file holds native libraries that have to be extracted
+     */
+    public record LibraryFile(String path, String url, String sha1, long size, boolean nativeArchive)
+    {
+        /**
+         * Converts this file to a download task.
+         *
+         * @param librariesDir the libraries directory the path is relative to
+         */
+        public DownloadTask toDownloadTask(Path librariesDir)
+        {
+            return new DownloadTask(url, librariesDir.resolve(path), sha1, size);
+        }
+    }
 
     private final JsonObject versionDetails;
     private final JsonObject loaderDetails;
@@ -68,9 +91,9 @@ final class LaunchManifest
      * @param followOsVersionRules whether to follow OS version-specific rules
      * @throws LaunchException when neither JSON names a main class
      */
-    LaunchManifest(String version, JsonObject versionDetails, JsonObject loaderDetails, String loaderId,
-                   Set<String> enabledFeatures, String osName, boolean followOsRules,
-                   boolean followArchRules, boolean followOsVersionRules) throws LaunchException
+    public VersionManifest(String version, JsonObject versionDetails, JsonObject loaderDetails, String loaderId,
+                           Set<String> enabledFeatures, String osName, boolean followOsRules,
+                           boolean followArchRules, boolean followOsVersionRules) throws LaunchException
     {
         this.versionDetails = versionDetails;
         this.loaderDetails = loaderDetails;
@@ -108,53 +131,75 @@ final class LaunchManifest
         }
     }
 
-    JsonObject versionDetails()
+    /**
+     * Creates a manifest for installing files instead of launching the game. Uses this system's OS and enables no launcher features.
+     *
+     * @param version the Minecraft version
+     * @param versionDetails the parsed vanilla version JSON, or null if only the libraries of a loader profile are needed
+     * @param loaderDetails the parsed loader profile, or null for vanilla
+     * @param loaderId the loader id, used in error messages
+     * @throws LaunchException when neither JSON names a main class
+     */
+    public static VersionManifest forInstall(String version, JsonObject versionDetails, JsonObject loaderDetails, String loaderId) throws LaunchException
+    {
+        return new VersionManifest(version, versionDetails != null ? versionDetails : new JsonObject(), loaderDetails, loaderId, Set.of(), getOS(), true, true, true);
+    }
+
+    public JsonObject versionDetails()
     {
         return versionDetails;
     }
 
-    JsonObject loaderDetails()
+    public JsonObject loaderDetails()
     {
         return loaderDetails;
     }
 
-    String assetIndex()
+    public String assetIndex()
     {
         return assetIndex;
     }
 
-    String mainClass()
+    public String mainClass()
     {
         return mainClass;
     }
 
-    String jarVersion()
+    public String jarVersion()
     {
         return jarVersion;
     }
 
-    int requiredJavaMajor()
+    public int requiredJavaMajor()
     {
         return requiredJavaMajor;
     }
 
-    String versionType()
+    public String versionType()
     {
         String type = string(versionDetails, "type");
         return type != null ? type : "release";
     }
 
-    String loggingArgument()
+    public String loggingArgument()
     {
         return string(obj(obj(versionDetails, "logging"), "client"), "argument");
     }
 
-    String loggingConfigId()
+    public String loggingConfigId()
     {
         return string(obj(obj(obj(versionDetails, "logging"), "client"), "file"), "id");
     }
 
-    Path gameAssets(Path gameDir, Path assetsDir)
+    /**
+     * Returns the download entry (id, url, sha1, size) of the client's logging config, or null if the version has none.
+     */
+    public JsonObject loggingFile()
+    {
+        return obj(obj(obj(versionDetails, "logging"), "client"), "file");
+    }
+
+    public Path gameAssets(Path gameDir, Path assetsDir)
     {
         Path index = assetsDir.resolve("indexes").resolve(assetIndex + ".json");
         if (Files.exists(index))
@@ -172,12 +217,12 @@ final class LaunchManifest
         return assetsDir;
     }
 
-    JsonArray libraries()
+    public JsonArray libraries()
     {
         return libraries;
     }
 
-    List<ClasspathEntry> classpathEntries()
+    public List<ClasspathEntry> classpathEntries()
     {
         List<ClasspathEntry> entries = new ArrayList<>();
         for (JsonElement elem : libraries)
@@ -188,6 +233,86 @@ final class LaunchManifest
             if (path != null) entries.add(new ClasspathEntry(path, isServerOnly(lib)));
         }
         return entries;
+    }
+
+    /**
+     * Returns every file the allowed, client-side libraries need. Works for vanilla libraries (with a "downloads" section)
+     * as well as for loader profiles, which only list maven coordinates and an optional repository "url".
+     * Libraries without a download URL are skipped, since something else (e.g. the Forge installer) provides them.
+     */
+    public List<LibraryFile> libraryFiles()
+    {
+        List<LibraryFile> files = new ArrayList<>();
+        for (JsonElement elem : libraries)
+        {
+            JsonObject lib = elem.getAsJsonObject();
+            if (isServerOnly(lib)) continue;
+
+            JsonObject downloads = obj(lib, "downloads");
+            JsonObject artifact = obj(downloads, "artifact");
+
+            if (artifact != null)
+            {
+                // 1.19+ ships natives as separate libraries with a "natives-" classifier in their name
+                addFile(files, string(artifact, "path"), artifact, isNativeClassifier(lib));
+            }
+            else
+            {
+                String path = libraryPath(lib);
+                if (path != null)
+                {
+                    String base = string(lib, "url");
+                    if (base == null || base.isEmpty()) base = DEFAULT_LIBRARY_URL;
+                    if (!base.endsWith("/")) base += "/";
+                    files.add(new LibraryFile(path, base + path, string(lib, "sha1"), sizeOf(lib), false));
+                }
+            }
+
+            // 1.18- lists natives as classifiers of the library
+            String classifier = string(obj(lib, "natives"), osName);
+            if (classifier != null)
+            {
+                String resolved = classifier.replace("${arch}", getArchitecture().contains("64") ? "64" : "32");
+                JsonObject nativeArtifact = obj(obj(downloads, "classifiers"), resolved);
+                if (nativeArtifact != null) addFile(files, string(nativeArtifact, "path"), nativeArtifact, true);
+            }
+        }
+        return files;
+    }
+
+    /**
+     * Returns download tasks for {@link #libraryFiles()}.
+     *
+     * @param librariesDir the libraries directory the files are saved to
+     */
+    public List<DownloadTask> libraryTasks(Path librariesDir)
+    {
+        List<DownloadTask> tasks = new ArrayList<>();
+        for (LibraryFile file : libraryFiles()) tasks.add(file.toDownloadTask(librariesDir));
+        return tasks;
+    }
+
+    private static void addFile(List<LibraryFile> files, String path, JsonObject download, boolean nativeArchive)
+    {
+        String url = string(download, "url");
+        if (path == null || url == null || url.isEmpty()) return;
+
+        files.add(new LibraryFile(path, url, string(download, "sha1"), sizeOf(download), nativeArchive));
+    }
+
+    private static long sizeOf(JsonObject o)
+    {
+        Integer size = integer(o, "size");
+        return size == null ? -1 : size;
+    }
+
+    private static boolean isNativeClassifier(JsonObject lib)
+    {
+        String name = string(lib, "name");
+        if (name == null) return false;
+
+        String[] parts = name.split(":");
+        return parts.length > 3 && parts[3].startsWith("native");
     }
 
     private JsonArray mergeLibraries()
@@ -218,7 +343,7 @@ final class LaunchManifest
         return result;
     }
 
-    static String libraryKey(String name)
+    public static String libraryKey(String name)
     {
         if (name == null) return null;
 
@@ -265,12 +390,12 @@ final class LaunchManifest
         return lib.has("clientreq") && !bool(lib, "clientreq");
     }
 
-    List<String> jvmArguments(Map<String, String> placeholders)
+    public List<String> jvmArguments(Map<String, String> placeholders)
     {
         return resolve(jvmTemplates, placeholders);
     }
 
-    List<String> gameArguments(Map<String, String> placeholders)
+    public List<String> gameArguments(Map<String, String> placeholders)
     {
         return resolve(gameTemplates, placeholders);
     }
@@ -372,7 +497,7 @@ final class LaunchManifest
         return sb.toString();
     }
 
-    static Set<String> featuresOf(LaunchProfile profile)
+    public static Set<String> featuresOf(LaunchProfile profile)
     {
         Set<String> features = new HashSet<>();
         if (profile.hasCustomResolution()) features.add("has_custom_resolution");
@@ -440,7 +565,8 @@ final class LaunchManifest
     static String normalizeArch(String arch)
     {
         String a = arch.trim().toLowerCase(Locale.ROOT);
-        return switch (a) {
+        return switch (a)
+        {
             case "x86", "i386", "i486", "i586", "i686" -> "x86";
             case "x86_64", "x86-64", "amd64", "x64" -> "x86_64";
             case "arm64", "aarch64" -> "arm64";
@@ -515,7 +641,7 @@ final class LaunchManifest
         return 0;
     }
 
-    static JsonObject readJson(Path path) throws IOException
+    public static JsonObject readJson(Path path) throws IOException
     {
         return JsonParser.parseString(Files.readString(path)).getAsJsonObject();
     }

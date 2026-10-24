@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import net.consler.librelauncherlib.auth.AuthProfile;
 import net.consler.librelauncherlib.exception.LaunchException;
 import net.consler.librelauncherlib.exception.VersionJsonMissingException;
+import net.consler.librelauncherlib.instance.VersionManifest;
 import net.consler.librelauncherlib.modloader.ModloaderProfile;
 import net.consler.librelauncherlib.util.SystemHelper;
 
@@ -23,7 +24,7 @@ import java.util.regex.Pattern;
  * Class for launching Minecraft instances.
  * <p>
  * This is the public entry point. It checks the instance on disk, loads the version JSON and loader profile into a
- * {@link LaunchManifest}, and lets a {@link LaunchCommandBuilder} turn that into a command line. The merged state is
+ * {@link VersionManifest}, and lets a {@link LaunchCommandBuilder} turn that into a command line. The merged state is
  * built once, in the constructor, so {@link #launch()} and {@link #buildCommand()} can be called any number of times.
  */
 public class MinecraftLauncher
@@ -93,7 +94,7 @@ public class MinecraftLauncher
 
         logsDir = gameDir.resolve("logs");
 
-        versionDetails = LaunchManifest.readJson(versionJsonPath);
+        versionDetails = VersionManifest.readJson(versionJsonPath);
 
         loaderId = modloaderProfile.loaderId();
         if (loaderId == null) loaderId = "vanilla";
@@ -107,10 +108,10 @@ public class MinecraftLauncher
 
         loaderDetails = loaderJsonPath == null ?
                 null :
-                LaunchManifest.readJson(loaderJsonPath);
+                VersionManifest.readJson(loaderJsonPath);
 
-        LaunchManifest manifest = new LaunchManifest(version, versionDetails, loaderDetails, loaderId,
-                LaunchManifest.featuresOf(launchProfile), SystemHelper.getOS(), launchProfile.followOsRules(),
+        VersionManifest manifest = new VersionManifest(version, versionDetails, loaderDetails, loaderId,
+                VersionManifest.featuresOf(launchProfile), SystemHelper.getOS(), launchProfile.followOsRules(),
                 launchProfile.followArchRules(), launchProfile.followOsVersionRules());
 
         assetIndex = manifest.assetIndex();
@@ -124,8 +125,7 @@ public class MinecraftLauncher
     }
 
     /**
-     * Launches a Minecraft game process for the supplied profile. Game output (stdout and stderr) goes to the
-     * profile's output log, by default {@code <gameDir>/logs/launcher-output.log}, which is replaced on every launch.
+     * Launches a Minecraft game process for the supplied profile.
      *
      * @return the started game process
      */
