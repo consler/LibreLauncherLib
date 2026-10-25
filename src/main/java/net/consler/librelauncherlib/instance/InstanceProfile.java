@@ -1,5 +1,7 @@
 package net.consler.librelauncherlib.instance;
 
+import net.consler.librelauncherlib.modloader.ModloaderProfile;
+
 import java.io.File;
 import java.nio.file.Path;
 
@@ -16,13 +18,11 @@ public record InstanceProfile(Path gameDir)
         return gameDir.getFileName().toString();
     }
 
-
     /** @return The directory containing the minecraft instance.*/
     public Path getFolder()
     {
         return gameDir;
     }
-
 
     /** @return The mod directory of the instance.*/
     public Path getModsFolder()
@@ -70,5 +70,22 @@ public record InstanceProfile(Path gameDir)
     public Servers getServers()
     {
         return new Servers(gameDir.resolve("servers.dat").toFile());
+    }
+
+    /**
+     * @return The mod loader used by the instance.
+     */
+    public String getModloader()
+    {
+        if (getFolder().resolve("fabric-profile.json").toFile().exists())
+            return ModloaderProfile.FABRIC_ID;
+        if (getFolder().resolve("quilt-profile.json").toFile().exists())
+            return ModloaderProfile.QUILT_ID;
+        if (getFolder().resolve("forge-profile.json").toFile().exists())
+            return ModloaderProfile.FORGE_ID;
+        if (getFolder().resolve("neoforge-profile.json").toFile().exists())
+            return ModloaderProfile.NEOFORGE_ID;
+
+        return ModloaderProfile.VANILLA_ID;
     }
 }
