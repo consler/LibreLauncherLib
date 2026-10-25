@@ -1,4 +1,6 @@
-package net.consler.librelauncherlib.exception;
+package net.consler.librelauncherlib.install;
+
+import net.consler.librelauncherlib.LibraryException;
 
 public class InstallationException extends LibraryException {
     public InstallationException(String message) {

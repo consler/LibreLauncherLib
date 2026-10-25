@@ -1,7 +1,5 @@
 package net.consler.librelauncherlib.install;
 
-import net.consler.librelauncherlib.exception.NativesExtractionException;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -45,7 +43,7 @@ class NativeExtractor
         catch (Exception e)
         {
             if (e instanceof NativesExtractionException) throw (NativesExtractionException) e;
-            throw new net.consler.librelauncherlib.exception.LibraryException("Failed to extract native libraries", e);
+            throw new NativesExtractionException("Failed to extract native libraries", e);
         }
     }
 }

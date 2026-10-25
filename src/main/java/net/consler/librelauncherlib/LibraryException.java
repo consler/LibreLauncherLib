@@ -1,6 +1,7 @@
-package net.consler.librelauncherlib.exception;
+package net.consler.librelauncherlib;
 
-public class LibraryException extends RuntimeException {
+public class LibraryException extends RuntimeException
+{
     public LibraryException(String message) {
         super(message);
     }

@@ -4,7 +4,6 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
-import net.consler.librelauncherlib.exception.ModrinthException;
 
 import java.io.IOException;
 import java.net.URI;

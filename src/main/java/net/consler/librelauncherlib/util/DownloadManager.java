@@ -2,9 +2,7 @@ package net.consler.librelauncherlib.util;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import net.consler.librelauncherlib.exception.DownloadFailedException;
-import net.consler.librelauncherlib.exception.HttpStatusException;
-import net.consler.librelauncherlib.exception.LibraryException;
+import net.consler.librelauncherlib.LibraryException;
 import net.consler.librelauncherlib.install.InstallerListener;
 
 import java.io.IOException;
@@ -71,8 +69,9 @@ public class DownloadManager
         catch (Exception e)
         {
             if (e instanceof InterruptedException) Thread.currentThread().interrupt();
+            if (e instanceof HttpStatusException) throw (HttpStatusException) e;
             if (e instanceof LibraryException) throw (LibraryException) e;
-            throw new LibraryException("Failed to fetch JSON from " + secureUrl, e);
+            throw new JsonFetchException("Failed to fetch JSON from " + secureUrl, e);
         }
     }
 

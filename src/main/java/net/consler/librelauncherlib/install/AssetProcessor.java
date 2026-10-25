@@ -4,6 +4,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.consler.librelauncherlib.util.DownloadManager;
+import net.consler.librelauncherlib.util.DownloadFailedException;
 import net.consler.librelauncherlib.util.DownloadTask;
 
 import java.nio.file.Files;
@@ -56,8 +57,9 @@ class AssetProcessor
         }
         catch (Exception e)
         {
-            if (e instanceof net.consler.librelauncherlib.exception.LibraryException) throw (net.consler.librelauncherlib.exception.LibraryException) e;
-            throw new net.consler.librelauncherlib.exception.LibraryException("Failed to process asset index", e);
+            if (e instanceof AssetProcessingException) throw (AssetProcessingException) e;
+            if (e instanceof DownloadFailedException) throw (DownloadFailedException) e;
+            throw new AssetProcessingException("Failed to process asset index", e);
         }
     }
 }

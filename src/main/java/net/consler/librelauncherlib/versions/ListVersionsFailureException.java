@@ -1,4 +1,4 @@
-package net.consler.librelauncherlib.exception;
+package net.consler.librelauncherlib.versions;
 
 public class ListVersionsFailureException extends RuntimeException
 {

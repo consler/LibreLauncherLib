@@ -1,6 +1,5 @@
 package net.consler.librelauncherlib.versions;
 
-import net.consler.librelauncherlib.exception.ListVersionsFailureException;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 

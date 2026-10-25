@@ -3,9 +3,6 @@ package net.consler.librelauncherlib.auth;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import net.consler.librelauncherlib.exception.AuthenticationException;
-import net.consler.librelauncherlib.exception.TokenRefreshException;
-import net.consler.librelauncherlib.exception.UserCancelledException;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;

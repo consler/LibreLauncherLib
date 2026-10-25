@@ -1,4 +1,4 @@
-package net.consler.librelauncherlib.exception;
+package net.consler.librelauncherlib.auth;
 
 public class UserCancelledException extends AuthenticationException
 {

@@ -5,7 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
-import net.consler.librelauncherlib.exception.LaunchException;
+import net.consler.librelauncherlib.launch.LaunchException;
 import net.consler.librelauncherlib.launch.LaunchProfile;
 import net.consler.librelauncherlib.util.DownloadTask;
 import net.consler.librelauncherlib.util.MavenHelper;

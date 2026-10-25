@@ -1,4 +1,4 @@
-package net.consler.librelauncherlib.exception;
+package net.consler.librelauncherlib.install;
 
 public class VersionNotFoundException extends RuntimeException {
     public VersionNotFoundException(String message) {

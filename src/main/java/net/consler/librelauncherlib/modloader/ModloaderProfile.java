@@ -28,8 +28,6 @@ public record ModloaderProfile(String loaderId, String loaderVersion)
     public static final String VANILLA_ID = "vanilla";
 
     /**
-     * Returns a modloader profile for vanilla Minecraft.
-     *
      * @return A modloader profile for vanilla Minecraft.
      */
     public static ModloaderProfile VANILLA()

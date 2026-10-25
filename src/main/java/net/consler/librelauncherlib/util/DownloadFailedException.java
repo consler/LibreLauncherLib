@@ -1,6 +1,8 @@
-package net.consler.librelauncherlib.exception;
+package net.consler.librelauncherlib.util;
 
-public class DownloadFailedException extends RuntimeException {
+import net.consler.librelauncherlib.LibraryException;
+
+public class DownloadFailedException extends LibraryException {
     public DownloadFailedException(String message) {
         super(message);
     }

@@ -4,7 +4,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import net.consler.librelauncherlib.exception.ResourcePackReadException;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -60,8 +59,9 @@ public class ResourcePack
         }
         catch (Exception e)
         {
+            if (e instanceof ResourcePackReadException) throw (ResourcePackReadException) e;
             System.err.println("Failed to read resource pack file: " + packFile.getFileName());
-            throw new RuntimeException("Failed to read resource pack: " + e.getMessage(), e);
+            throw new ResourcePackReadException("Failed to read resource pack: " + packFile.getFileName(), e);
         }
     }
 
@@ -174,7 +174,7 @@ public class ResourcePack
         }
         catch (IOException e)
         {
-            throw new ResourcePackReadException("Failed to parse resource pack icon image");
+            throw new ResourcePackReadException("Failed to parse resource pack icon image", e);
         }
     }
 

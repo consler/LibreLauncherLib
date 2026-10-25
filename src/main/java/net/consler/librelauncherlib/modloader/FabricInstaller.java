@@ -37,7 +37,7 @@ public class FabricInstaller
         }
         catch (Exception e)
         {
-            throw new RuntimeException("Failed to install Fabric dependencies", e);
+            throw new ModLoaderException("Failed to install Fabric dependencies", e);
         }
     }
 }

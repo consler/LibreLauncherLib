@@ -2,7 +2,6 @@ package net.consler.librelauncherlib.modloader;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import net.consler.librelauncherlib.exception.NeoforgeInstallerException;
 import net.consler.librelauncherlib.util.DownloadManager;
 
 import java.nio.file.Files;
@@ -54,10 +53,10 @@ public class NeoforgeInstaller
                     break;
                 }
             }
-            if (installedVersionId == null) throw new NeoforgeInstallerException("NeoForge installer did not report an installed version in launcher_profiles.json");
+            if (installedVersionId == null) throw new ModLoaderException("NeoForge installer did not report an installed version in launcher_profiles.json");
 
             Path installedJson = gameDir.resolve("versions").resolve(installedVersionId).resolve(installedVersionId + ".json");
-            if (!Files.exists(installedJson)) throw new NeoforgeInstallerException("Expected NeoForge version json not found at " + installedJson);
+            if (!Files.exists(installedJson)) throw new ModLoaderException("Expected NeoForge version json not found at " + installedJson);
 
             Files.copy(installedJson, gameDir.resolve("neoforge-profile.json"), StandardCopyOption.REPLACE_EXISTING);
 
@@ -65,7 +64,8 @@ public class NeoforgeInstaller
         }
         catch (Exception e)
         {
-            throw new NeoforgeInstallerException("Failed to install NeoForge for version " + minecraftVersion + "\n" + e.getMessage());
+            if (e instanceof InterruptedException) Thread.currentThread().interrupt();
+            throw new ModLoaderException("Failed to install NeoForge for version " + minecraftVersion, e);
         }
     }
 }

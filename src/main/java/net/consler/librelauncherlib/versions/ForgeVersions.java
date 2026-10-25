@@ -1,6 +1,5 @@
 package net.consler.librelauncherlib.versions;
 
-import net.consler.librelauncherlib.exception.ListVersionsFailureException;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 
@@ -54,7 +53,7 @@ public class ForgeVersions
         }
         catch (Exception e)
         {
-            throw new ListVersionsFailureException(e.getMessage());
+            throw new ListVersionsFailureException("Failed to load Forge versions", e);
         }
     }
 
@@ -97,7 +96,7 @@ public class ForgeVersions
         }
         catch (Exception e)
         {
-            throw new ListVersionsFailureException(e.getMessage());
+            throw new ListVersionsFailureException("Failed to load Forge versions for Minecraft " + minecraftVersion, e);
         }
 
         return versions.reversed();

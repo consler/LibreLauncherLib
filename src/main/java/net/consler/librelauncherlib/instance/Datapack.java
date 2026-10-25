@@ -60,7 +60,8 @@ public class Datapack
         catch (Exception e)
         {
             System.err.println("Failed to read datapack file: " + packFile.getFileName());
-            throw new RuntimeException("Failed to read datapack: " + e.getMessage(), e);
+            if (e instanceof DatapackReadException) throw (DatapackReadException) e;
+            throw new DatapackReadException("Failed to read datapack: " + packFile.getFileName(), e);
         }
     }
 
@@ -158,7 +159,7 @@ public class Datapack
         }
         catch (IOException e)
         {
-            throw new RuntimeException("Failed to parse datapack icon image", e);
+            throw new DatapackReadException("Failed to parse datapack icon image", e);
         }
     }
 

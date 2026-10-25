@@ -4,7 +4,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import net.consler.librelauncherlib.exception.ModReadException;
 import net.consler.librelauncherlib.modloader.ModloaderProfile;
 
 import javax.imageio.ImageIO;
@@ -83,7 +82,7 @@ public class Mod
         catch (Exception e)
         {
             System.err.println("Failed to read mod file: " + modFile.getName());
-            throw new ModReadException(e.getMessage());
+            throw new ModReadException("Failed to read mod file: " + modFile.getName(), e);
         }
     }
 

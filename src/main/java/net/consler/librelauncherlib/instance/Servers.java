@@ -91,7 +91,7 @@ public record Servers(File file)
             }
             catch (IOException e)
             {
-                throw new RuntimeException("Failed to encode server icon to Base64", e);
+                throw new ServerDataWriteException("Failed to encode server icon to Base64", e);
             }
         }
     }
@@ -139,7 +139,7 @@ public record Servers(File file)
         }
         catch (IOException e)
         {
-            throw new RuntimeException("Failed to read servers.dat", e);
+            throw new ServerDataReadException("Failed to read servers.dat", e);
         }
         return list;
     }
@@ -201,7 +201,7 @@ public record Servers(File file)
         }
         catch (IOException e)
         {
-            throw new RuntimeException("Failed to save servers.dat", e);
+            throw new ServerDataWriteException("Failed to save servers.dat", e);
         }
     }
 }

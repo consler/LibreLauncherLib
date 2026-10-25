@@ -7,6 +7,7 @@ import com.google.gson.JsonParser;
 import net.consler.librelauncherlib.util.DownloadTask;
 import net.consler.librelauncherlib.util.DownloadManager;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
@@ -31,7 +32,7 @@ public class ForgeInstaller
      * @param gameDir The directory where Forge will be installed.
      * @param minecraftVersion The version of Minecraft in the provided directory.
      */
-    public static void install(ModloaderProfile modloaderProfile, Path gameDir, String minecraftVersion, Path javaBin)
+    public static void install(ModloaderProfile modloaderProfile, Path gameDir, String minecraftVersion, Path javaBin) throws InterruptedException, IOException, ModLoaderException
     {
         Path installerPath = gameDir.resolve("forge-installer.jar");
 
@@ -49,7 +50,8 @@ public class ForgeInstaller
         }
         catch (Exception e)
         {
-            throw new RuntimeException("Failed to install Forge for version " + minecraftVersion, e);
+            if (e instanceof InterruptedException) Thread.currentThread().interrupt();
+            throw new ModLoaderException("Failed to install Forge for version " + minecraftVersion, e);
         }
         finally
         {
@@ -71,7 +73,7 @@ public class ForgeInstaller
         }
     }
 
-    private static void installLegacy(JsonObject profileJson, Path installerPath, Path gameDir) throws Exception
+    private static void installLegacy(JsonObject profileJson, Path installerPath, Path gameDir) throws IOException
     {
         Path librariesDir = gameDir.resolve("libraries");
 
@@ -106,7 +108,7 @@ public class ForgeInstaller
         Files.writeString(gameDir.resolve("forge-profile.json"), versionInfo.toString());
     }
 
-    private static void downloadLegacyLibraries(JsonArray libraries, Path librariesDir) throws Exception
+    private static void downloadLegacyLibraries(JsonArray libraries, Path librariesDir) throws IOException
     {
         List<DownloadTask> tasks = new ArrayList<>();
         for (JsonElement el : libraries)
@@ -147,7 +149,7 @@ public class ForgeInstaller
     }
 
 
-    private static void installModern(Path installerPath, Path gameDir, Path javaPath) throws Exception
+    private static void installModern(Path installerPath, Path gameDir, Path javaPath) throws IOException, InterruptedException
     {
         Path launcherProfiles = gameDir.resolve("launcher_profiles.json");
         Path installerLog = gameDir.resolve("forge-installer.log");

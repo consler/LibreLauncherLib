@@ -1,6 +1,8 @@
-package net.consler.librelauncherlib.exception;
+package net.consler.librelauncherlib.util;
 
-public class HttpStatusException extends RuntimeException {
+import net.consler.librelauncherlib.LibraryException;
+
+public class HttpStatusException extends LibraryException {
     private final int statusCode;
 
     public HttpStatusException(int statusCode, String message) {

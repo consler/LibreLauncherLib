@@ -2,7 +2,6 @@ package net.consler.librelauncherlib.instance;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
-import net.consler.librelauncherlib.exception.ModpackReadException;
 
 import java.io.IOException;
 import java.io.InputStream;

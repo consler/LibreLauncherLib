@@ -1,4 +1,4 @@
-package net.consler.librelauncherlib.exception;
+package net.consler.librelauncherlib.integration.modrinth;
 
 import java.io.Serial;
 import java.util.concurrent.CompletionException;

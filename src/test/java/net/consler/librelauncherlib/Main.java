@@ -3,7 +3,7 @@ package net.consler.librelauncherlib;
 import javafx.application.Platform;
 import net.consler.librelauncherlib.auth.AuthProfile;
 import net.consler.librelauncherlib.auth.MicrosoftAuthenticator;
-import net.consler.librelauncherlib.exception.UserCancelledException;
+import net.consler.librelauncherlib.auth.UserCancelledException;
 import net.consler.librelauncherlib.install.MinecraftInstaller;
 import net.consler.librelauncherlib.instance.*;
 import net.consler.librelauncherlib.integration.modrinth.Modrinth;

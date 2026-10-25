@@ -3,8 +3,6 @@ package net.consler.librelauncherlib.launch;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import net.consler.librelauncherlib.auth.AuthProfile;
-import net.consler.librelauncherlib.exception.LaunchException;
-import net.consler.librelauncherlib.exception.VersionJsonMissingException;
 import net.consler.librelauncherlib.instance.VersionManifest;
 import net.consler.librelauncherlib.modloader.ModloaderProfile;
 import net.consler.librelauncherlib.util.SystemHelper;
@@ -62,10 +60,10 @@ public class MinecraftLauncher
      * @param modloaderProfile the modloader profile to use
      * @throws LaunchException when the instance is corrupted
      * @throws IOException when failed an I/O function
-     * @throws VersionJsonMissingException when the version JSON is missing
+     * @throws CorruptedLaunchException when the instance is corrupted
      */
     public MinecraftLauncher(LaunchProfile launchProfile, AuthProfile authProfile, ModloaderProfile modloaderProfile)
-            throws LaunchException, IOException, VersionJsonMissingException
+            throws LaunchException, IOException, CorruptedLaunchException
     {
         if (launchProfile == null) throw new LaunchException("Launch profile was not specified.");
         if (authProfile == null) throw new LaunchException("Auth profile was not specified.");
@@ -76,21 +74,21 @@ public class MinecraftLauncher
         this.modloaderProfile = modloaderProfile;
 
         gameDir = launchProfile.gameDir();
-        if(gameDir == null) throw new LaunchException("Game directory was not specified.");
+        if(gameDir == null) throw new CorruptedLaunchException("Game directory was not specified.");
 
         version = launchProfile.version();
-        if(version == null) throw new LaunchException("Version was not specified.");
+        if(version == null) throw new CorruptedLaunchException("Version was not specified.");
 
         versionJsonPath = resolveFile(gameDir, version, ".json");
-        if (!Files.exists(versionJsonPath)) throw new VersionJsonMissingException("Version JSON missing: " + versionJsonPath);
+        if (!Files.exists(versionJsonPath)) throw new CorruptedLaunchException("Version JSON missing: " + versionJsonPath);
 
         nativesDir = gameDir.resolve("natives");
 
         assetsDir = gameDir.resolve("assets");
-        if(!Files.exists(assetsDir)) throw new LaunchException("Assets directory missing.");
+        if(!Files.exists(assetsDir)) throw new CorruptedLaunchException("Assets directory missing.");
 
         librariesDir = gameDir.resolve("libraries");
-        if(!Files.exists(librariesDir)) throw new LaunchException("Libraries directory missing.");
+        if(!Files.exists(librariesDir)) throw new CorruptedLaunchException("Libraries directory missing.");
 
         logsDir = gameDir.resolve("logs");
 
@@ -104,7 +102,7 @@ public class MinecraftLauncher
                 gameDir.resolve(loaderId + "-profile.json");
 
         if (loaderJsonPath != null && !Files.exists(loaderJsonPath))
-            throw new LaunchException("Loader profile missing for " + loaderId + " (" + loaderJsonPath + "). Run the installer first.");
+            throw new CorruptedLaunchException("Loader profile missing for " + loaderId + " (" + loaderJsonPath + "). Run the installer first.");
 
         loaderDetails = loaderJsonPath == null ?
                 null :

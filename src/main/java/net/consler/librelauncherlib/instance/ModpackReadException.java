@@ -1,4 +1,4 @@
-package net.consler.librelauncherlib.exception;
+package net.consler.librelauncherlib.instance;
 
 import java.io.Serial;
 

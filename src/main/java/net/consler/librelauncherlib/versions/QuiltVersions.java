@@ -4,7 +4,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import net.consler.librelauncherlib.exception.ListVersionsFailureException;
 
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
@@ -36,7 +35,7 @@ public class QuiltVersions
         }
         catch (Exception e)
         {
-            throw new ListVersionsFailureException(e.getMessage());
+            throw new ListVersionsFailureException("Failed to load Quilt versions", e);
         }
     }
     /**
@@ -97,7 +96,7 @@ public class QuiltVersions
         }
         catch (Exception e)
         {
-            throw new ListVersionsFailureException(e.getMessage());
+            throw new ListVersionsFailureException("Failed to load Quilt versions for Minecraft " + minecraftVersion, e);
         }
 
         return versions;

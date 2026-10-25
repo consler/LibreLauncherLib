@@ -37,7 +37,7 @@ public class QuiltInstaller
         }
         catch (Exception e)
         {
-            throw new RuntimeException("Failed to install Quilt dependencies", e);
+            throw new ModLoaderException("Failed to install Quilt dependencies", e);
         }
     }
 }

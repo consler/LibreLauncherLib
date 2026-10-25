@@ -1,7 +1,6 @@
 package net.consler.librelauncherlib.integration.modrinth;
 
 import com.google.gson.annotations.SerializedName;
-import net.consler.librelauncherlib.exception.ModrinthException;
 import net.consler.librelauncherlib.util.DownloadManager;
 import net.consler.librelauncherlib.util.DownloadTask;
 
