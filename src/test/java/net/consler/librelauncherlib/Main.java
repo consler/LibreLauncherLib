@@ -8,6 +8,8 @@ import net.consler.librelauncherlib.install.MinecraftInstaller;
 import net.consler.librelauncherlib.instance.*;
 import net.consler.librelauncherlib.integration.modrinth.Modrinth;
 import net.consler.librelauncherlib.integration.modrinth.ModrinthProject;
+import net.consler.librelauncherlib.integration.modrinth.ProjectType;
+import net.consler.librelauncherlib.integration.modrinth.SearchQuery;
 import net.consler.librelauncherlib.launch.LaunchProfile;
 import net.consler.librelauncherlib.launch.MinecraftLauncher;
 import net.consler.librelauncherlib.modloader.ModloaderProfile;
@@ -18,7 +20,6 @@ import javax.swing.*;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public class Main
@@ -50,7 +51,7 @@ public class Main
 
     private static void install()
     {
-        new MinecraftInstaller().install("1.12.2", gameDir, new ModloaderProfile(ModloaderProfile.FORGE_ID, "1.12.2-14.23.5.2864"));
+        new MinecraftInstaller().install(version, gameDir, new ModloaderProfile(ModloaderProfile.QUILT_ID, "26.3.0.97"));
     }
 
     private static void run()
@@ -195,17 +196,14 @@ public class Main
 
     private static void modrinth()
     {
-        try
-        {
-            List<ModrinthProject> projects = Modrinth.searchMods("map");
-            for (ModrinthProject project : projects)
-            {
-                System.out.println(project.title());
-            }
-        }
-        catch (IOException | InterruptedException e)
-        {
-            throw new RuntimeException(e);
-        }
+        String ua = "consler/LibreLauncher/1.0";
+
+        Modrinth.SearchResult page = Modrinth.search(new SearchQuery("sodium")
+                        .projectType(ProjectType.MOD)
+                        .limit(1),
+                ua).join();
+
+        ModrinthProject mod = page.hits().getFirst().fetchDetails(ua).join();
+        System.out.println(mod.body());
     }
 }

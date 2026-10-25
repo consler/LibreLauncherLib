@@ -82,7 +82,7 @@ public class MinecraftLauncher
         if(version == null) throw new LaunchException("Version was not specified.");
 
         versionJsonPath = resolveFile(gameDir, version, ".json");
-        if (!Files.exists(versionJsonPath)) throw new VersionJsonMissingException("Version JSON missing for " + version + ". Run the installer first.");
+        if (!Files.exists(versionJsonPath)) throw new VersionJsonMissingException("Version JSON missing: " + versionJsonPath);
 
         nativesDir = gameDir.resolve("natives");
 

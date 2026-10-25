@@ -95,6 +95,18 @@ public class DownloadManager
      */
     public void downloadFile(DownloadTask task)
     {
+        downloadFile(task, Map.of());
+    }
+
+    /**
+     * Downloads a file with additional request headers.
+     *
+     * @param task The file to download
+     * @param headers HTTP headers to send with the request
+     */
+    public void downloadFile(DownloadTask task, Map<String, String> headers)
+    {
+        if (headers == null) throw new IllegalArgumentException("headers must not be null");
         String secureUrl = enforceHttps(task.url());
         Path destination = task.destination();
 
@@ -111,7 +123,12 @@ public class DownloadManager
         }
 
         Path temp = destination.resolveSibling(destination.getFileName().toString() + ".part");
-        HttpRequest request = HttpRequest.newBuilder().uri(URI.create(secureUrl)).timeout(Duration.ofSeconds(30)).GET().build();
+        HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
+                .uri(URI.create(secureUrl))
+                .timeout(Duration.ofSeconds(30))
+                .GET();
+        headers.forEach(requestBuilder::header);
+        HttpRequest request = requestBuilder.build();
 
         for (int attempt = 1; ; attempt++)
         {

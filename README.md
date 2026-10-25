@@ -18,6 +18,7 @@
 * **Authenticating with Microsoft**
 * **Handling mods, resource packs, datapacks, servers, and worlds**
 * **Handling NBT**
+* **Integration with Modrinth**
 * **Easy-to-use API**
 
 ## Importing
@@ -31,7 +32,7 @@ Add this to your `pom.xml`:
    <dependency>
       <groupId>net.consler</groupId>
       <artifactId>librelauncherlib</artifactId>
-      <version>1.4.1</version>
+      <version>1.5</version>
    </dependency>
 </dependencies>
 ```
@@ -39,7 +40,7 @@ Add this to your `pom.xml`:
 Add this to your `build.gradle`:
 ```groovy
 dependencies {
-    implementation 'net.consler:librelauncherlib:1.4.1'
+    implementation 'net.consler:librelauncherlib:1.5'
 }
 ```
 

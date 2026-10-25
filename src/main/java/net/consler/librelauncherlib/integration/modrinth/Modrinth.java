@@ -1,135 +1,287 @@
 package net.consler.librelauncherlib.integration.modrinth;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.reflect.TypeToken;
+import com.google.gson.annotations.SerializedName;
+import net.consler.librelauncherlib.exception.ModrinthException;
+import net.consler.librelauncherlib.util.DownloadManager;
+import net.consler.librelauncherlib.util.DownloadTask;
 
-import java.io.IOException;
-import java.lang.reflect.Type;
 import java.net.URI;
 import java.net.URLEncoder;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Wrapper for Modrinth API v2 search and project operations.
  */
 public class Modrinth
 {
-    private static final String API_BASE = "https://api.modrinth.com/v2";
-    private static final HttpClient CLIENT = HttpClient.newHttpClient();
-    private static final Gson GSON = new Gson();
-    private static final String USER_AGENT = "consler/LibreLauncherLib";
+    /**
+     * Runs a search and returns one page including paging info (offset, limit, total hits).
+     */
+    public static CompletableFuture<SearchResult> search(SearchQuery query, String userAgent)
+    {
+        if (query == null) throw new IllegalArgumentException("query must not be null");
+        return fetchPageAsync(query, userAgent);
+    }
 
     /**
-     * Searches all Modrinth projects across all categories.
+     * Runs a search and keeps paging until maxResults hits were collected or the results run out.
+     * Pass Integer.MAX_VALUE to fetch everything that matches. Starts at the query's own offset.
+     * Requests are sent one after another, so large values take a while.
+     */
+    public static CompletableFuture<List<ModrinthProject>> searchAll(SearchQuery query, int maxResults, String userAgent)
+    {
+        if (query == null) throw new IllegalArgumentException("query must not be null");
+        if (maxResults < 1) throw new IllegalArgumentException("maxResults must be >= 1");
+        return collectPages(query, maxResults, query.getOffset(), userAgent, new ArrayList<>());
+    }
+
+    /**
+     * Searches all Modrinth projects across all categories (first page, server default size).
+     */
+    public static CompletableFuture<List<ModrinthProject>> searchProjects(String query, String userAgent)
+    {
+        return searchProjects(query, null, userAgent);
+    }
+
+    /**
+     * Searches Modrinth projects filtered by type (first page, server default size).
      *
-     * @param query Search term.
-     * @return Matching projects.
+     * @param type Project type filter, or null for all types.
      */
-    public static List<ModrinthProject> searchProjects(String query) throws IOException, InterruptedException
+    public static CompletableFuture<List<ModrinthProject>> searchProjects(String query, ProjectType type, String userAgent)
     {
-        return searchProjects(query, null);
+        SearchQuery searchQuery = new SearchQuery(query);
+        if (type != null) searchQuery.projectType(type);
+        return search(searchQuery, userAgent).thenApply(SearchResult::hits);
     }
 
-    /**
-     * Searches Modrinth projects filtered by type.
-     *
-     * @param query Search term.
-     * @param type  Project type filter, or null for all types.
-     * @return Matching projects.
-     */
-    public static List<ModrinthProject> searchProjects(String query, ProjectType type) throws IOException, InterruptedException
+    /** Searches Modrinth mods. */
+    public static CompletableFuture<List<ModrinthProject>> searchMods(String query, String userAgent)
     {
-        String url = API_BASE + "/search?query=" + URLEncoder.encode(query, StandardCharsets.UTF_8);
-
-        if (type != null)
-        {
-            String facet = URLEncoder.encode("[[\"project_type:" + type.getId() + "\"]]", StandardCharsets.UTF_8);
-            url += "&facets=" + facet;
-        }
-
-        String json = fetch(url);
-        JsonObject jsonObject = JsonParser.parseString(json).getAsJsonObject();
-        JsonArray hits = jsonObject.getAsJsonArray("hits");
-
-        Type listType = new TypeToken<List<ModrinthProject>>(){}.getType();
-        return GSON.fromJson(hits, listType);
+        return searchProjects(query, ProjectType.MOD, userAgent);
     }
 
-    /**
-     * Searches specifically for mods.
-     */
-    public static List<ModrinthProject> searchMods(String query) throws IOException, InterruptedException
+    /** Searches Modrinth modpacks. */
+    public static CompletableFuture<List<ModrinthProject>> searchModpacks(String query, String userAgent)
     {
-        return searchProjects(query, ProjectType.MOD);
+        return searchProjects(query, ProjectType.MODPACK, userAgent);
     }
 
-    /**
-     * Searches specifically for modpacks.
-     */
-    public static List<ModrinthProject> searchModpacks(String query) throws IOException, InterruptedException
+    /** Searches Modrinth resource packs. */
+    public static CompletableFuture<List<ModrinthProject>> searchResourcePacks(String query, String userAgent)
     {
-        return searchProjects(query, ProjectType.MODPACK);
+        return searchProjects(query, ProjectType.RESOURCE_PACK, userAgent);
     }
 
-    /**
-     * Searches specifically for resource packs.
-     */
-    public static List<ModrinthProject> searchResourcePacks(String query) throws IOException, InterruptedException
+    /** Searches Modrinth shaders. */
+    public static CompletableFuture<List<ModrinthProject>> searchShaders(String query, String userAgent)
     {
-        return searchProjects(query, ProjectType.RESOURCE_PACK);
+        return searchProjects(query, ProjectType.SHADER, userAgent);
     }
 
-    /**
-     * Searches specifically for shaders.
-     */
-    public static List<ModrinthProject> searchShaders(String query) throws IOException, InterruptedException
+    /** Searches Modrinth plugins. */
+    public static CompletableFuture<List<ModrinthProject>> searchPlugins(String query, String userAgent)
     {
-        return searchProjects(query, ProjectType.SHADER);
+        return searchProjects(query, ProjectType.PLUGIN, userAgent);
     }
 
-    /**
-     * Searches specifically for plugins.
-     */
-    public static List<ModrinthProject> searchPlugins(String query) throws IOException, InterruptedException
+    /** Searches Modrinth datapacks. */
+    public static CompletableFuture<List<ModrinthProject>> searchDatapacks(String query, String userAgent)
     {
-        return searchProjects(query, ProjectType.PLUGIN);
-    }
-
-    /**
-     * Searches specifically for datapacks.
-     */
-    public static List<ModrinthProject> searchDatapacks(String query) throws IOException, InterruptedException
-    {
-        return searchProjects(query, ProjectType.DATAPACK);
+        return searchProjects(query, ProjectType.DATAPACK, userAgent);
     }
 
     /**
      * Fetches detailed project metadata by ID or URL slug.
-     *
-     * @param slugOrId Project ID or URL slug.
-     * @return Project metadata.
+     * Fails with a NOT_FOUND {@link ModrinthException} if the project doesn't exist.
      */
-    public static ModrinthProject getProject(String slugOrId) throws IOException, InterruptedException
+    public static CompletableFuture<ModrinthProject> getProject(String slugOrId, String userAgent)
     {
-        String json = fetch(API_BASE + "/project/" + slugOrId);
-        return GSON.fromJson(json, ModrinthProject.class);
+        requireSlugOrId(slugOrId);
+        return ModrinthApiClient.get("/project/" + enc(slugOrId), userAgent, ModrinthProject.class);
     }
 
-    private static String fetch(String url) throws IOException, InterruptedException
+    /**
+     * Fetches all projects and versions that the given project depends upon.
+     * Fails with a NOT_FOUND {@link ModrinthException} if the project doesn't exist.
+     */
+    public static CompletableFuture<Dependencies> getDependencies(String slugOrId, String userAgent)
     {
-        HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).header("User-Agent", USER_AGENT).GET().build();
+        requireSlugOrId(slugOrId);
+        return ModrinthApiClient.get("/project/" + enc(slugOrId) + "/dependencies", userAgent, Dependencies.class);
+    }
 
-        HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+    /** Fetches all project versions without filters. */
+    public static CompletableFuture<List<ModrinthVersion>> getProjectVersions(String slugOrId, String userAgent)
+    {
+        return getProjectVersions(slugOrId, new VersionQuery(), userAgent);
+    }
 
-        if (response.statusCode() != 200) throw new RuntimeException("Modrinth API error " + response.statusCode() + ": " + response.body());
+    /**
+     * Fetches project versions filtered by loaders, game versions, or featured status.
+     */
+    public static CompletableFuture<List<ModrinthVersion>> getProjectVersions(
+            String slugOrId, VersionQuery query, String userAgent)
+    {
+        requireSlugOrId(slugOrId);
+        if (query == null)
+            throw new IllegalArgumentException("query must not be null");
 
-        return response.body();
+        String queryString = query.toQueryString();
+        String path = "/project/" + enc(slugOrId) + "/version" + (queryString.isEmpty() ? "" : "?" + queryString);
+
+        return ModrinthApiClient.get(path, userAgent, ModrinthVersion[].class).thenApply(List::of);
+    }
+
+    /**
+     * Fetches a version by its Modrinth version ID.
+     */
+    public static CompletableFuture<ModrinthVersion> getVersion(String versionId, String userAgent)
+    {
+        requireSlugOrId(versionId);
+        return ModrinthApiClient.get("/version/" + enc(versionId), userAgent, ModrinthVersion.class);
+    }
+
+    /**
+     * Downloads a version file without setting a User-Agent header.
+     *
+     * @param file Version file metadata.
+     * @param destination Destination file path.
+     * @return A future containing the normalized destination path.
+     */
+    public static CompletableFuture<Path> downloadVersionFile(ModrinthVersion.VersionFile file, Path destination)
+    {
+        return downloadVersionFile(file, destination, null);
+    }
+
+    /**
+     * Downloads a version file and sends the given User-Agent with the request.
+     *
+     * @param file Version file metadata.
+     * @param destination Destination file path.
+     * @param userAgent Descriptive HTTP User-Agent value.
+     * @return A future containing the normalized destination path.
+     */
+    public static CompletableFuture<Path> downloadVersionFile(
+            ModrinthVersion.VersionFile file, Path destination, String userAgent)
+    {
+        if (file == null)
+            throw new IllegalArgumentException("file must not be null");
+        if (destination == null)
+            throw new IllegalArgumentException("destination must not be null");
+        if (userAgent != null)
+            requireUserAgent(userAgent);
+        if (file.url() == null || file.url().isBlank())
+            throw new IllegalArgumentException("file URL must not be empty");
+
+        URI fileUri = URI.create(file.url());
+        if (!"https".equalsIgnoreCase(fileUri.getScheme()) || fileUri.getHost() == null || fileUri.getUserInfo() != null)
+            throw new IllegalArgumentException("Modrinth file URL must be a valid HTTPS URL");
+
+        Path target = destination.toAbsolutePath().normalize();
+        if (target.getFileName() == null) throw new IllegalArgumentException("destination must be a file path");
+
+        String sha1 = file.hashes().entrySet().stream()
+                .filter(entry -> entry.getKey().equalsIgnoreCase("sha1"))
+                .map(Map.Entry::getValue)
+                .findFirst()
+                .orElse(null);
+
+        return CompletableFuture.supplyAsync(() ->
+        {
+            DownloadTask task = new DownloadTask(file.url(), target, sha1, file.size());
+            DownloadManager downloadManager = new DownloadManager();
+            if (userAgent == null) downloadManager.downloadFile(task);
+            else downloadManager.downloadFile(task, Map.of("User-Agent", userAgent));
+            return target;
+        });
+    }
+
+    /**
+     * One page of search results.
+     */
+    public record SearchResult(
+            List<ModrinthProject> hits,
+            int offset,
+            int limit,
+            @SerializedName("total_hits") int totalHits
+    )
+    {
+        /** Returns an empty hit list when the API response omits hits. */
+        public SearchResult
+        {
+            hits = hits == null ? List.of() : hits;
+        }
+
+        /** @return The offset to use to request the next page. */
+        public int nextOffset()
+        {
+            return offset + hits.size();
+        }
+
+        /** @return True if there are more results after this page. */
+        public boolean hasMore()
+        {
+            return nextOffset() < totalHits;
+        }
+    }
+
+    /**
+     * Response of GET /project/{id|slug}/dependencies.
+     *
+     * @param projects Projects the project depends upon.
+     * @param versions Versions the project depends upon.
+     */
+    public record Dependencies(List<ModrinthProject> projects, List<ModrinthVersion> versions)
+    {
+        /** Replaces missing project or version lists with empty lists. */
+        public Dependencies
+        {
+            projects = projects == null ? List.of() : projects;
+            versions = versions == null ? List.of() : versions;
+        }
+    }
+
+    private static CompletableFuture<SearchResult> fetchPageAsync(SearchQuery query, String userAgent)
+    {
+        return ModrinthApiClient.get("/search?" + query.toQueryString(), userAgent, SearchResult.class);
+    }
+
+    private static CompletableFuture<List<ModrinthProject>> collectPages(
+            SearchQuery query, int maxResults, int offset, String userAgent, List<ModrinthProject> collected)
+    {
+        if (collected.size() >= maxResults)
+            return CompletableFuture.completedFuture(List.copyOf(collected));
+
+        int pageSize = Math.min(SearchQuery.MAX_LIMIT, maxResults - collected.size());
+        return fetchPageAsync(query.copy().offset(offset).limit(pageSize), userAgent).thenCompose(page ->
+        {
+            collected.addAll(page.hits());
+            if (page.hits().isEmpty() || !page.hasMore() || collected.size() >= maxResults)
+                return CompletableFuture.completedFuture(List.copyOf(collected));
+            return collectPages(query, maxResults, page.nextOffset(), userAgent, collected);
+        });
+    }
+
+    private static void requireSlugOrId(String slugOrId)
+    {
+        if (slugOrId == null || slugOrId.isBlank())
+            throw new IllegalArgumentException("slugOrId must not be empty");
+    }
+
+    private static void requireUserAgent(String userAgent)
+    {
+        if (userAgent == null || userAgent.isBlank())
+            throw new IllegalArgumentException("Modrinth requires a User-Agent");
+    }
+
+    private static String enc(String value)
+    {
+        return URLEncoder.encode(value, StandardCharsets.UTF_8);
     }
 }
