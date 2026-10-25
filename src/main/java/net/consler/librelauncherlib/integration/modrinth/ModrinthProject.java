@@ -185,7 +185,7 @@ public record ModrinthProject(
          * Downloads the version's primary file and converts it to a {@link Mod}.
          *
          * @param version Project version to download.
-         * @param destination Destination file path.
+         * @param destination Destination file path, or an existing directory to save the file into using its Modrinth filename.
          * @param userAgent Descriptive HTTP User-Agent value.
          * @return A future containing the parsed mod.
          */
@@ -199,7 +199,7 @@ public record ModrinthProject(
          * Downloads the version's primary file and converts it to a {@link Datapack}.
          *
          * @param version Project version to download.
-         * @param destination Destination file path.
+         * @param destination Destination file path, or an existing directory to save the file into using its Modrinth filename.
          * @param userAgent Descriptive HTTP User-Agent value.
          * @return A future containing the parsed datapack.
          */
@@ -213,7 +213,7 @@ public record ModrinthProject(
          * Downloads the version's primary file and reads its Modrinth modpack index.
          *
          * @param version Project version to download.
-         * @param destination Destination file path.
+         * @param destination Destination file path, or an existing directory to save the file into using its Modrinth filename.
          * @param userAgent Descriptive HTTP User-Agent value.
          * @return A future containing the parsed modpack.
          */
@@ -227,7 +227,7 @@ public record ModrinthProject(
          * Downloads the version's primary file and converts it to a {@link ResourcePack}.
          *
          * @param version Project version to download.
-         * @param destination Destination file path.
+         * @param destination Destination file path, or an existing directory to save the file into using its Modrinth filename.
          * @param userAgent Descriptive HTTP User-Agent value.
          * @return A future containing the parsed resource pack.
          */
@@ -241,7 +241,7 @@ public record ModrinthProject(
          * Downloads the version's primary file and converts it to a {@link Shader}.
          *
          * @param version Project version to download.
-         * @param destination Destination file path.
+         * @param destination Destination file path, or an existing directory to save the file into using its Modrinth filename.
          * @param userAgent Descriptive HTTP User-Agent value.
          * @return A future containing the shader wrapper.
          */
@@ -255,7 +255,7 @@ public record ModrinthProject(
          * Downloads the version's primary file and converts it to a {@link Plugin}.
          *
          * @param version Project version to download.
-         * @param destination Destination file path.
+         * @param destination Destination file path, or an existing directory to save the file into using its Modrinth filename.
          * @param userAgent Descriptive HTTP User-Agent value.
          * @return A future containing the plugin wrapper.
          */

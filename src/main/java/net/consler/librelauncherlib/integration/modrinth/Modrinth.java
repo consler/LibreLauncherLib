@@ -7,6 +7,7 @@ import net.consler.librelauncherlib.util.DownloadTask;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -150,7 +151,7 @@ public class Modrinth
      * Downloads a version file without setting a User-Agent header.
      *
      * @param file Version file metadata.
-     * @param destination Destination file path.
+     * @param destination Destination file path, or an existing directory to save the file into using its Modrinth filename.
      * @return A future containing the normalized destination path.
      */
     public static CompletableFuture<Path> downloadVersionFile(ModrinthVersion.VersionFile file, Path destination)
@@ -162,7 +163,7 @@ public class Modrinth
      * Downloads a version file and sends the given User-Agent with the request.
      *
      * @param file Version file metadata.
-     * @param destination Destination file path.
+     * @param destination Destination file path, or an existing directory to save the file into using its Modrinth filename.
      * @param userAgent Descriptive HTTP User-Agent value.
      * @return A future containing the normalized destination path.
      */
@@ -182,7 +183,7 @@ public class Modrinth
         if (!"https".equalsIgnoreCase(fileUri.getScheme()) || fileUri.getHost() == null || fileUri.getUserInfo() != null)
             throw new IllegalArgumentException("Modrinth file URL must be a valid HTTPS URL");
 
-        Path target = destination.toAbsolutePath().normalize();
+        Path target = resolveDownloadDestination(file, destination);
         if (target.getFileName() == null) throw new IllegalArgumentException("destination must be a file path");
 
         String sha1 = file.hashes().entrySet().stream()
@@ -199,6 +200,19 @@ public class Modrinth
             else downloadManager.downloadFile(task, Map.of("User-Agent", userAgent));
             return target;
         });
+    }
+
+    static Path resolveDownloadDestination(ModrinthVersion.VersionFile file, Path destination)
+    {
+        Path target = destination.toAbsolutePath().normalize();
+        if (!Files.isDirectory(target)) return target;
+
+        String filename = file.filename();
+        if (filename == null || filename.isBlank() || filename.contains("/") || filename.contains("\\")
+                || filename.equals(".") || filename.equals(".."))
+            throw new IllegalArgumentException("Modrinth file has an invalid filename");
+
+        return target.resolve(filename);
     }
 
     /**

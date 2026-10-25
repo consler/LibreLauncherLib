@@ -108,6 +108,8 @@ public class DownloadManager
         if (headers == null) throw new IllegalArgumentException("headers must not be null");
         String secureUrl = enforceHttps(task.url());
         Path destination = task.destination();
+        if (Files.isDirectory(destination))
+            throw new DownloadFailedException("Destination is a directory, not a file: " + destination);
 
         try
         {

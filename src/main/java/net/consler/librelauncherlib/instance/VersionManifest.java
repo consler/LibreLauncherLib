@@ -253,7 +253,6 @@ public final class VersionManifest
 
             if (artifact != null)
             {
-                // 1.19+ ships natives as separate libraries with a "natives-" classifier in their name
                 addFile(files, string(artifact, "path"), artifact, isNativeClassifier(lib));
             }
             else
@@ -268,7 +267,6 @@ public final class VersionManifest
                 }
             }
 
-            // 1.18- lists natives as classifiers of the library
             String classifier = string(obj(lib, "natives"), osName);
             if (classifier != null)
             {
