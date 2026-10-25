@@ -81,7 +81,6 @@ public class Mod
         }
         catch (Exception e)
         {
-            System.err.println("Failed to read mod file: " + modFile.getName());
             throw new ModReadException("Failed to read mod file: " + modFile.getName(), e);
         }
     }
@@ -259,7 +258,7 @@ public class Mod
             }
             catch (IOException e)
             {
-                System.err.println("Failed to parse icon image: " + normalizedPath);
+                throw new RuntimeException("Failed to parse icon image: " + normalizedPath, e);
             }
         }
     }

@@ -7,7 +7,6 @@ import net.consler.librelauncherlib.auth.UserCancelledException;
 import net.consler.librelauncherlib.install.MinecraftInstaller;
 import net.consler.librelauncherlib.instance.*;
 import net.consler.librelauncherlib.integration.modrinth.Modrinth;
-import net.consler.librelauncherlib.integration.modrinth.ModrinthProject;
 import net.consler.librelauncherlib.integration.modrinth.ProjectType;
 import net.consler.librelauncherlib.integration.modrinth.SearchQuery;
 import net.consler.librelauncherlib.launch.LaunchProfile;
@@ -200,10 +199,10 @@ public class Main
 
         Modrinth.SearchResult page = Modrinth.search(new SearchQuery("sodium")
                         .projectType(ProjectType.MOD)
-                        .limit(1),
+                        .offset(10)
+                        .limit(20),
                 ua).join();
 
-        ModrinthProject mod = page.hits().getFirst().fetchDetails(ua).join();
-        System.out.println(mod.body());
+        page.hits().forEach(System.out::println);
     }
 }

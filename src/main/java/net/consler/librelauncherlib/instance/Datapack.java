@@ -59,7 +59,6 @@ public class Datapack
         }
         catch (Exception e)
         {
-            System.err.println("Failed to read datapack file: " + packFile.getFileName());
             if (e instanceof DatapackReadException) throw (DatapackReadException) e;
             throw new DatapackReadException("Failed to read datapack: " + packFile.getFileName(), e);
         }

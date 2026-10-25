@@ -174,7 +174,7 @@ public class World
         }
         catch (IOException e)
         {
-            System.err.println("Failed to read world icon for: " + directoryName);
+            throw new RuntimeException("Failed to read world icon for: " + directoryName, e);
         }
     }
 

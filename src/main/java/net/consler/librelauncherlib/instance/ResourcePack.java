@@ -60,7 +60,6 @@ public class ResourcePack
         catch (Exception e)
         {
             if (e instanceof ResourcePackReadException) throw (ResourcePackReadException) e;
-            System.err.println("Failed to read resource pack file: " + packFile.getFileName());
             throw new ResourcePackReadException("Failed to read resource pack: " + packFile.getFileName(), e);
         }
     }

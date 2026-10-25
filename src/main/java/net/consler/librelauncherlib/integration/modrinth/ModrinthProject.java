@@ -270,7 +270,9 @@ public record ModrinthProject(
          */
         public BufferedImage getIcon() throws IOException, URISyntaxException
         {
-                return ImageIO.read(new URI(iconUrl).toURL());
+                BufferedImage image = ImageIO.read(new URI(iconUrl).toURL());
+                if (image == null) throw new IOException("Unsupported or invalid image: " + iconUrl);
+                return image;
         }
 
         private <T> CompletableFuture<T> downloadAs(
