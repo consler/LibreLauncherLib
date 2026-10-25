@@ -8,6 +8,11 @@ import net.consler.librelauncherlib.instance.Plugin;
 import net.consler.librelauncherlib.instance.ResourcePack;
 import net.consler.librelauncherlib.instance.Shader;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -258,6 +263,14 @@ public record ModrinthProject(
                 ModrinthVersion version, Path destination, String userAgent)
         {
                 return downloadAs(version, destination, userAgent, ProjectType.PLUGIN, this::toPlugin);
+        }
+
+        /**
+         * @return Icon as a BufferedImage
+         */
+        public BufferedImage getIcon() throws IOException, URISyntaxException
+        {
+                return ImageIO.read(new URI(iconUrl).toURL());
         }
 
         private <T> CompletableFuture<T> downloadAs(
