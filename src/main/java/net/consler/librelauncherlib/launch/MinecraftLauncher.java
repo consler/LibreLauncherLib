@@ -5,17 +5,14 @@ import com.google.gson.JsonObject;
 import net.consler.librelauncherlib.auth.AuthProfile;
 import net.consler.librelauncherlib.instance.VersionManifest;
 import net.consler.librelauncherlib.modloader.ModloaderProfile;
+import net.consler.librelauncherlib.util.JavaVersion;
 import net.consler.librelauncherlib.util.SystemHelper;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -168,59 +165,15 @@ public class MinecraftLauncher
      */
     public List<String> buildCommand() throws IOException
     {
-        Path javaPath = launchProfile.javaPath();
-        if (javaPath == null || !Files.isRegularFile(javaPath))
-            throw new FileNotFoundException("Java executable not found: " + javaPath);
+        JavaVersion javaVersion = launchProfile.javaVersion();
 
-        int javaMajor = detectJavaMajor(javaPath);
-        if (launchProfile.checkJavaVersion() && javaMajor > 0 && javaMajor < requiredJavaMajor)
-            throw new IOException("Minecraft " + version + " needs Java " + requiredJavaMajor + " or newer, but " + javaPath + " is Java " + javaMajor + ".");
+        if (launchProfile.checkJavaVersion() && javaVersion.major() > 0 && javaVersion.major() < requiredJavaMajor)
+            throw new IOException("Minecraft " + version + " needs Java " + requiredJavaMajor + " or newer, but " + javaVersion.executable() + " is Java " + javaVersion.major() + ".");
 
         Path clientJarPath = gameDir.resolve("client.jar");
-        if (!Files.exists(clientJarPath)) throw new FileNotFoundException("Minecraft client JAR missing for version " + jarVersion + " at resolved path.");
+        if (!Files.exists(clientJarPath))
+            throw new FileNotFoundException("Minecraft client JAR missing for version " + jarVersion + " at resolved path.");
 
-        return commandBuilder.build(javaPath, javaMajor, clientJarPath);
-    }
-
-    /**
-     * Finds the major version of a Java executable by running {@code java -version}.
-     *
-     * @return the major version (8, 16, 17, 21, 25...), or -1 when it could not be determined
-     */
-    public static int detectJavaMajor(Path javaExecutable)
-    {
-        try
-        {
-            Process p = new ProcessBuilder(javaExecutable.toAbsolutePath().toString(), "-version").redirectErrorStream(true).start();
-
-            String output;
-            try (InputStream in = p.getInputStream())
-            {
-                output = new String(in.readAllBytes(), StandardCharsets.UTF_8);
-            }
-            if (!p.waitFor(10, TimeUnit.SECONDS))
-            {
-                p.destroyForcibly();
-                return -1;
-            }
-
-            Matcher m = JAVA_VERSION.matcher(output);
-            if (!m.find()) return -1;
-
-            String v = m.group(1);
-            if (v.startsWith("1.")) v = v.substring(2);
-            int end = 0;
-            while (end < v.length() && Character.isDigit(v.charAt(end))) end++;
-            return end == 0 ? -1 : Integer.parseInt(v.substring(0, end));
-        }
-        catch (IOException e)
-        {
-            return -1;
-        }
-        catch (InterruptedException e)
-        {
-            Thread.currentThread().interrupt();
-            return -1;
-        }
+        return commandBuilder.build(javaVersion.executable(), javaVersion.major(), clientJarPath);
     }
 }

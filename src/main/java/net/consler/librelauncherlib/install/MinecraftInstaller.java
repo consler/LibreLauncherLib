@@ -7,7 +7,7 @@ import net.consler.librelauncherlib.LibraryException;
 import net.consler.librelauncherlib.modloader.*;
 import net.consler.librelauncherlib.util.DownloadManager;
 import net.consler.librelauncherlib.util.DownloadTask;
-import net.consler.librelauncherlib.util.SystemHelper;
+import net.consler.librelauncherlib.util.JavaVersion;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -48,7 +48,7 @@ public class MinecraftInstaller
      */
     public void install(String version, Path gameDir, ModloaderProfile modloaderProfile)
     {
-        install(version, gameDir, modloaderProfile, SystemHelper.getJavaBin());
+        install(version, gameDir, modloaderProfile, JavaVersion.current().executable());
     }
 
 

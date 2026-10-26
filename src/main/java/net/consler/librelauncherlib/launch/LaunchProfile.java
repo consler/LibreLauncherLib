@@ -1,7 +1,7 @@
 package net.consler.librelauncherlib.launch;
 
 import net.consler.librelauncherlib.instance.World;
-import net.consler.librelauncherlib.util.SystemHelper;
+import net.consler.librelauncherlib.util.JavaVersion;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -22,7 +22,7 @@ import java.util.Objects;
  * @param launcherVersion launcher version reported to the game
  * @param gameDir the instance directory
  * @param extraJvmArgs raw JVM arguments, added after the manifest's own (so they win on duplicates)
- * @param javaPath the Java executable to start the game with
+ * @param javaVersion the Java version to start the game with
  * @param initialRamMb initial heap in megabytes ({@code -Xms}); 0 picks min(ramMb, 512)
  * @param extraGameArgs raw game arguments, added at the end
  * @param width window width, 0 for the game's default; must be set together with {@code height}
@@ -47,7 +47,7 @@ public record LaunchProfile(
         String launcherVersion,
         Path gameDir,
         List<String> extraJvmArgs,
-        Path javaPath,
+        JavaVersion javaVersion,
         int initialRamMb,
         List<String> extraGameArgs,
         int width,
@@ -151,7 +151,7 @@ public record LaunchProfile(
         private int ramMb = 2048;
         private String launcherName = "LibreLauncherLib";
         private String launcherVersion = "1.0";
-        private Path javaPath = SystemHelper.getJavaBin();
+        private JavaVersion javaVersion = JavaVersion.current();
         private final List<String> extraJvmArgs = new ArrayList<>();
 
         private int initialRamMb = 0;
@@ -217,9 +217,9 @@ public record LaunchProfile(
         /**
          * Overrides the Java binary that should be used to start the game.
          */
-        public Builder withJavaPath(Path javaPath)
+        public Builder withJavaVersion(JavaVersion javaVersion)
         {
-            this.javaPath = javaPath;
+            this.javaVersion = javaVersion;
             return this;
         }
 
@@ -405,7 +405,7 @@ public record LaunchProfile(
         public LaunchProfile build()
         {
             return new LaunchProfile(ramMb, version, launcherName, launcherVersion, gameDir, extraJvmArgs,
-                    javaPath, initialRamMb, extraGameArgs, width, height, fullscreen, demo, quickPlay, xuid,
+                    javaVersion, initialRamMb, extraGameArgs, width, height, fullscreen, demo, quickPlay, xuid,
                     clientId, wrapperCommand, environment, outputLog, checkJavaVersion, followOsRules,
                     followArchRules, followOsVersionRules, linkProcess);
         }

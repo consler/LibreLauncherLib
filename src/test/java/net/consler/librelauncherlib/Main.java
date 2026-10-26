@@ -13,6 +13,7 @@ import net.consler.librelauncherlib.launch.LaunchProfile;
 import net.consler.librelauncherlib.launch.MinecraftLauncher;
 import net.consler.librelauncherlib.modloader.ModloaderProfile;
 import net.consler.librelauncherlib.nbt.NBT;
+import net.consler.librelauncherlib.util.JavaVersion;
 import net.consler.librelauncherlib.versions.*;
 
 import javax.swing.*;
@@ -24,7 +25,7 @@ import java.util.concurrent.CompletableFuture;
 public class Main
 {
 
-    private static final String version = "26.2";
+    private static final String version = "1.21.11";
     private static final Path gameDir = Path.of("/home/consler/TEST");
     private static final Path java25Bin = Path.of("/home/consler/.jdks/jbr-25.0.4.1-2/bin/java");
 
@@ -46,6 +47,7 @@ public class Main
             case "world" -> worldInfo();
             case "modrinth" -> modrinth();
             case "mrpack" -> mrpack();
+            case "javaversions" -> javaVersions();
         }
     }
 
@@ -58,13 +60,13 @@ public class Main
     {
         LaunchProfile launchProfile;
         launchProfile = new LaunchProfile.Builder(version, gameDir)
-                .withJavaPath(java25Bin)
+                .withJavaVersion(JavaVersion.current())
                 .build();
         AuthProfile authProfile = AuthProfile.Offline("Consler");
 
         try
         {
-            new MinecraftLauncher(launchProfile, authProfile, new ModloaderProfile(ModloaderProfile.QUILT_ID, "0.20.0-beta.9")).launch();
+            new MinecraftLauncher(launchProfile, authProfile, new ModloaderProfile(ModloaderProfile.FABRIC_ID, "0.20.1")).launch();
         }
         catch (IOException e)
         {
@@ -218,5 +220,12 @@ public class Main
         {
             throw new RuntimeException(e);
         }
+    }
+
+    private static void javaVersions()
+    {
+        JavaVersion.autoDetect().forEach(System.out::println);
+
+        System.out.println(JavaVersion.current());
     }
 }
