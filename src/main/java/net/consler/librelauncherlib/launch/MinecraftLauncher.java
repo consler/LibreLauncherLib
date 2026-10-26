@@ -79,8 +79,8 @@ public class MinecraftLauncher
         version = launchProfile.version();
         if(version == null) throw new CorruptedLaunchException("Version was not specified.");
 
-        versionJsonPath = resolveFile(gameDir, version, ".json");
-        if (!Files.exists(versionJsonPath)) throw new CorruptedLaunchException("Version JSON missing: " + versionJsonPath);
+        versionJsonPath = gameDir.resolve("manifest.json");
+        if (!Files.exists(versionJsonPath)) throw new CorruptedLaunchException("Version manifest missing: " + versionJsonPath);
 
         nativesDir = gameDir.resolve("natives");
 
@@ -93,6 +93,8 @@ public class MinecraftLauncher
         logsDir = gameDir.resolve("logs");
 
         versionDetails = VersionManifest.readJson(versionJsonPath);
+        if(!(versionDetails.has("id") && versionDetails.get("id").getAsString().equals(version)))
+            throw new CorruptedLaunchException("Version specified does not match the manifest version");
 
         loaderId = modloaderProfile.loaderId();
         if (loaderId == null) loaderId = "vanilla";
@@ -153,7 +155,7 @@ public class MinecraftLauncher
         pb.environment().putAll(launchProfile.environment());
         pb.redirectErrorStream(true);
         pb.redirectOutput(ProcessBuilder.Redirect.to(outputLog.toFile()));
-        if(launchProfile.linkProcess()) pb.redirectInput(ProcessBuilder.Redirect.DISCARD);
+        if (launchProfile.linkProcess()) pb.redirectInput(ProcessBuilder.Redirect.INHERIT);
         return pb;
     }
 
@@ -174,7 +176,7 @@ public class MinecraftLauncher
         if (launchProfile.checkJavaVersion() && javaMajor > 0 && javaMajor < requiredJavaMajor)
             throw new IOException("Minecraft " + version + " needs Java " + requiredJavaMajor + " or newer, but " + javaPath + " is Java " + javaMajor + ".");
 
-        Path clientJarPath = resolveFile(gameDir, jarVersion, ".jar");
+        Path clientJarPath = gameDir.resolve("client.jar");
         if (!Files.exists(clientJarPath)) throw new FileNotFoundException("Minecraft client JAR missing for version " + jarVersion + " at resolved path.");
 
         return commandBuilder.build(javaPath, javaMajor, clientJarPath);
@@ -220,16 +222,5 @@ public class MinecraftLauncher
             Thread.currentThread().interrupt();
             return -1;
         }
-    }
-
-    private Path resolveFile(Path gameDir, String version, String extension)
-    {
-        Path mojangPath = gameDir.resolve("versions").resolve(version).resolve(version + extension);
-        if (Files.exists(mojangPath)) return mojangPath;
-
-        Path flatPath = gameDir.resolve(version + extension);
-        if (Files.exists(flatPath)) return flatPath;
-
-        return mojangPath;
     }
 }

@@ -1,8 +1,10 @@
 package net.consler.librelauncherlib.instance;
 
+import com.google.gson.JsonObject;
 import net.consler.librelauncherlib.modloader.ModloaderProfile;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 
 /**
@@ -87,5 +89,57 @@ public record InstanceProfile(Path gameDir)
             return ModloaderProfile.NEOFORGE_ID;
 
         return ModloaderProfile.VANILLA_ID;
+    }
+
+    /**
+     * @return The version of the modloader.
+     */
+
+    public String getLoaderVersion() throws IOException
+    {
+        switch(getModloader())
+        {
+            case ModloaderProfile.FABRIC_ID, ModloaderProfile.QUILT_ID ->
+            {
+                JsonObject profile = VersionManifest.readJson(getFolder().resolve("fabric-profile.json"));
+                String input = profile.get("id").getAsString();
+
+                int firstHyphen = input.indexOf('-');
+                int secondHyphen = input.indexOf('-', firstHyphen + 1);
+                int lastHyphen = input.lastIndexOf('-');
+
+                if (secondHyphen < 0 || lastHyphen <= secondHyphen)
+                    throw new IllegalArgumentException("Unexpected format: " + input);
+
+                return input.substring(secondHyphen + 1, lastHyphen);
+
+            }
+            case ModloaderProfile.FORGE_ID ->
+            {
+                JsonObject profile = VersionManifest.readJson(getFolder().resolve("forge-profile.json"));
+                String value = profile.get("id").getAsString();
+                return value.replace("-forge-", "-");
+            }
+            case ModloaderProfile.NEOFORGE_ID ->
+            {
+                JsonObject profile = VersionManifest.readJson(getFolder().resolve("neoforge-profile.json"));
+                String value = profile.get("id").getAsString();
+                return value.replace("neoforge-", "");
+            }
+            default ->
+            {
+                return "0.0.0";
+            }
+        }
+    }
+
+    /**
+     * @return The version of the instance.
+     */
+
+    public String getVersion() throws IOException
+    {
+        JsonObject manifest = VersionManifest.readJson(getFolder().resolve("manifest.json"));
+        return manifest.get("id").getAsString();
     }
 }

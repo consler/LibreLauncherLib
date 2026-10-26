@@ -86,7 +86,7 @@ public class MinecraftInstaller
             List<Path> nativeZipsToExtract = new ArrayList<>();
 
             JsonObject downloads = versionDetails.getAsJsonObject("downloads");
-            tasks.add(DownloadTask.of(downloads.getAsJsonObject("client"), gameDir.resolve(version + ".jar")));
+            tasks.add(DownloadTask.of(downloads.getAsJsonObject("client"), gameDir.resolve("client.jar")));
 
             libraryProcessor.processLibraries(versionDetails.getAsJsonArray("libraries"), librariesDir, tasks, nativeZipsToExtract);
 
@@ -96,7 +96,7 @@ public class MinecraftInstaller
 
             nativeExtractor.extractNatives(nativeZipsToExtract, nativesDir);
 
-            Files.writeString(gameDir.resolve(version + ".json"), versionDetails.toString());
+            Files.writeString(gameDir.resolve("manifest.json"), versionDetails.toString());
 
             if(!modloaderProfile.loaderId().equals(VANILLA_ID))
             {

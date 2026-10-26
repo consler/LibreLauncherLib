@@ -24,7 +24,7 @@ import java.util.concurrent.CompletableFuture;
 public class Main
 {
 
-    private static final String version = "26.3";
+    private static final String version = "1.21.11";
     private static final Path gameDir = Path.of("/home/consler/TEST");
     private static final Path java25Bin = Path.of("/home/consler/.jdks/jbr-25.0.4.1-2/bin/java");
 
@@ -50,7 +50,7 @@ public class Main
 
     private static void install()
     {
-        new MinecraftInstaller().install(version, gameDir, new ModloaderProfile(ModloaderProfile.QUILT_ID, "26.3.0.97"));
+        new MinecraftInstaller().install(version, gameDir, new ModloaderProfile(ModloaderProfile.QUILT_ID, "0.20.0-beta.9"));
     }
 
     private static void run()
@@ -58,13 +58,12 @@ public class Main
         LaunchProfile launchProfile;
         launchProfile = new LaunchProfile.Builder(version, gameDir)
                 .withJavaPath(java25Bin)
-                .withQuickPlaySingleplayer("/home/consler/TEST/saves/Demo_World")
                 .build();
         AuthProfile authProfile = AuthProfile.Offline("Consler");
 
         try
         {
-            new MinecraftLauncher(launchProfile, authProfile, new ModloaderProfile("fabric", "0.19.5")).launch();
+            new MinecraftLauncher(launchProfile, authProfile, new ModloaderProfile(ModloaderProfile.QUILT_ID, "0.20.0-beta.9")).launch();
         }
         catch (IOException e)
         {
@@ -76,7 +75,7 @@ public class Main
     {
         System.out.println(QuiltVersions.getVersionsCompatibleWith(version));
         System.out.println(FabricVersions.getVersionsCompatibleWith(version));
-        System.out.println(ForgeVersions.getVersionsCompatibleWith("1.12.2"));
+        System.out.println(ForgeVersions.getVersionsCompatibleWith(version));
         System.out.println(NeoforgeVersions.getVersionsCompatibleWith(version));
         System.out.println(VanillaVersions.getVersionsFiltered(false, false, true, true));
     }

@@ -38,7 +38,7 @@ import java.util.Objects;
  * @param checkJavaVersion refuse to start when {@code javaPath} is older than the version needs
  * @param followOsRules refuse to start when a disapproved OS tries to launch
  * @param followArchRules refuse to start when a disapproved architecture tries to launch
- * @param linkProcess whether to make the process a child of the launcher
+ * @param linkProcess whether the process inherits the launcher's standard input
  */
 public record LaunchProfile(
         int ramMb,
@@ -392,9 +392,7 @@ public record LaunchProfile(
             return this;
         }
 
-        /**
-         * Whether to inherit the process
-         */
+        /** Whether the process inherits the launcher's standard input. */
         public Builder linkProcess(boolean linkProcess)
         {
             this.linkProcess = linkProcess;
