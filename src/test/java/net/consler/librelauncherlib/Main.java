@@ -24,7 +24,7 @@ import java.util.concurrent.CompletableFuture;
 public class Main
 {
 
-    private static final String version = "1.21.11";
+    private static final String version = "26.2";
     private static final Path gameDir = Path.of("/home/consler/TEST");
     private static final Path java25Bin = Path.of("/home/consler/.jdks/jbr-25.0.4.1-2/bin/java");
 
@@ -45,12 +45,13 @@ public class Main
             case "datapack" -> dataPackInfo();
             case "world" -> worldInfo();
             case "modrinth" -> modrinth();
+            case "mrpack" -> mrpack();
         }
     }
 
     private static void install()
     {
-        new MinecraftInstaller().install(version, gameDir, new ModloaderProfile(ModloaderProfile.QUILT_ID, "0.20.0-beta.9"));
+        new MinecraftInstaller().install(version, gameDir, new ModloaderProfile(ModloaderProfile.FABRIC_ID, "0.20.1"));
     }
 
     private static void run()
@@ -155,7 +156,6 @@ public class Main
         System.out.println("Resource Pack Description: " + resourcePack.getDescription());
         System.out.println("Resource Pack Format: " + resourcePack.getPackFormat());
     }
-
     private static void nbtParser()
     {
         try
@@ -203,5 +203,20 @@ public class Main
                 ua).join();
 
         page.hits().forEach(System.out::println);
+    }
+
+    private static void mrpack()
+    {
+        Mrpack mrpack = new Mrpack(Path.of("/home/consler/Downloads/1.21.11-4.1.mrpack"));
+
+        MrpackInstaller installer = new MrpackInstaller(mrpack);
+        try
+        {
+            installer.installTo(gameDir, MrpackInstaller.Side.CLIENT);
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 }

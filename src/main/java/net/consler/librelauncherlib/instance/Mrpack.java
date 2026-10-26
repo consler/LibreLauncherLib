@@ -14,11 +14,8 @@ import java.util.zip.ZipFile;
 
 /**
  * Reads metadata from a Modrinth modpack archive (.mrpack).
- *
- * <p>This class reads the pack index and exposes its metadata. It does not install the pack or
- * extract override files.</p>
  */
-public final class Modpack
+public final class Mrpack
 {
     private static final Gson GSON = new Gson();
     private static final String INDEX_ENTRY = "modrinth.index.json";
@@ -32,7 +29,7 @@ public final class Modpack
      * @param packFile Path to a .mrpack archive.
      * @throws ModpackReadException If the archive has no valid Modrinth index.
      */
-    public Modpack(Path packFile)
+    public Mrpack(Path packFile)
     {
         if (packFile == null) throw new IllegalArgumentException("packFile must not be null");
         this.packFile = packFile.toAbsolutePath().normalize();

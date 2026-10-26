@@ -3,7 +3,7 @@ package net.consler.librelauncherlib.integration.modrinth;
 import com.google.gson.annotations.SerializedName;
 import net.consler.librelauncherlib.instance.Datapack;
 import net.consler.librelauncherlib.instance.Mod;
-import net.consler.librelauncherlib.instance.Modpack;
+import net.consler.librelauncherlib.instance.Mrpack;
 import net.consler.librelauncherlib.instance.Plugin;
 import net.consler.librelauncherlib.instance.ResourcePack;
 import net.consler.librelauncherlib.instance.Shader;
@@ -130,16 +130,16 @@ public record ModrinthProject(
         }
 
         /**
-         * Converts a downloaded Modrinth .mrpack file to a {@link Modpack}.
+         * Converts a downloaded Modrinth .mrpack file to a {@link Mrpack}.
          *
          * @param downloadedFile Path to the downloaded archive.
          * @return Parsed modpack index metadata.
          */
-        public Modpack toModpack(Path downloadedFile)
+        public Mrpack toModpack(Path downloadedFile)
         {
                 requireType(ProjectType.MODPACK);
                 requireDownloadedFile(downloadedFile);
-                return new Modpack(downloadedFile);
+                return new Mrpack(downloadedFile);
         }
 
         /**
@@ -217,7 +217,7 @@ public record ModrinthProject(
          * @param userAgent Descriptive HTTP User-Agent value.
          * @return A future containing the parsed modpack.
          */
-        public CompletableFuture<Modpack> downloadAsModpack(
+        public CompletableFuture<Mrpack> downloadAsModpack(
                 ModrinthVersion version, Path destination, String userAgent)
         {
                 return downloadAs(version, destination, userAgent, ProjectType.MODPACK, this::toModpack);
