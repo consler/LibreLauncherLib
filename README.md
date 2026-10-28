@@ -32,7 +32,7 @@ Add this to your `pom.xml`:
    <dependency>
       <groupId>net.consler</groupId>
       <artifactId>librelauncherlib</artifactId>
-      <version>1.5</version>
+      <version>1.6</version>
    </dependency>
 </dependencies>
 ```
@@ -53,10 +53,10 @@ dependencies {
 2) Launch:
    ``` java
    LaunchProfile launchProfile = new LaunchProfile.Builder(version, gameDir).build();
-   AuthProfile authProfile = new MicrosoftAuthenticator().login(new WebViewFrame()).join();
-   ModLoaderProfile modLoaderProfile = new ModLoaderProfile(ModLoaderProfile.FABRIC_ID, "0.19.5")
+   AuthProfile authProfile = new MicrosoftAuthenticator().login(new NativeWebViewFrame()).join();
+   ModloaderProfile modloaderProfile = new ModloaderProfile(ModloaderProfile.FABRIC_ID, "0.19.5")
    
-   new MinecraftLauncher().launch(launchProfile, authProfile, modloaderProfile);
+   new MinecraftLauncher(launchProfile, authProfile, modloaderProfile).launch();
    ```
    
 ## More information

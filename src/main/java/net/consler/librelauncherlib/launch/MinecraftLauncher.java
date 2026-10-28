@@ -3,6 +3,7 @@ package net.consler.librelauncherlib.launch;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import net.consler.librelauncherlib.auth.AuthProfile;
+import net.consler.librelauncherlib.instance.Instance;
 import net.consler.librelauncherlib.instance.VersionManifest;
 import net.consler.librelauncherlib.modloader.ModloaderProfile;
 import net.consler.librelauncherlib.util.JavaVersion;
@@ -18,8 +19,8 @@ import java.util.regex.Pattern;
 /**
  * Class for launching Minecraft instances.
  * <p>
- * This is the public entry point. It checks the instance on disk, loads the version JSON and loader profile into a
- * {@link VersionManifest}, and lets a {@link LaunchCommandBuilder} turn that into a command line. The merged state is
+ * This is the public entry point. It checks the instance on disk, loads version data and loader profile into a
+ * {@link LaunchManifest}, and lets a {@link LaunchCommandBuilder} turn that into a command line. The merged state is
  * built once, in the constructor, so {@link #launch()} and {@link #buildCommand()} can be called any number of times.
  */
 public class MinecraftLauncher
@@ -73,9 +74,6 @@ public class MinecraftLauncher
         gameDir = launchProfile.gameDir();
         if(gameDir == null) throw new CorruptedLaunchException("Game directory was not specified.");
 
-        version = launchProfile.version();
-        if(version == null) throw new CorruptedLaunchException("Version was not specified.");
-
         versionJsonPath = gameDir.resolve("manifest.json");
         if (!Files.exists(versionJsonPath)) throw new CorruptedLaunchException("Version manifest missing: " + versionJsonPath);
 
@@ -89,8 +87,12 @@ public class MinecraftLauncher
 
         logsDir = gameDir.resolve("logs");
 
-        versionDetails = VersionManifest.readJson(versionJsonPath);
-        if(!(versionDetails.has("id") && versionDetails.get("id").getAsString().equals(version)))
+        VersionManifest versionManifest = new Instance(gameDir).getVersionManifest();
+        versionDetails = versionManifest.toJson();
+        version = versionManifest.id();
+        if (version == null || version.isBlank())
+            throw new CorruptedLaunchException("Version manifest does not declare an id.");
+        if (launchProfile.version() != null && !launchProfile.version().equals(version))
             throw new CorruptedLaunchException("Version specified does not match the manifest version");
 
         loaderId = modloaderProfile.loaderId();
@@ -103,12 +105,11 @@ public class MinecraftLauncher
         if (loaderJsonPath != null && !Files.exists(loaderJsonPath))
             throw new CorruptedLaunchException("Loader profile missing for " + loaderId + " (" + loaderJsonPath + "). Run the installer first.");
 
-        loaderDetails = loaderJsonPath == null ?
-                null :
-                VersionManifest.readJson(loaderJsonPath);
+        VersionManifest loaderManifest = loaderJsonPath == null ? null : VersionManifest.fromFile(loaderJsonPath);
+        loaderDetails = loaderManifest == null ? null : loaderManifest.toJson();
 
-        VersionManifest manifest = new VersionManifest(version, versionDetails, loaderDetails, loaderId,
-                VersionManifest.featuresOf(launchProfile), SystemHelper.getOS(), launchProfile.followOsRules(),
+        LaunchManifest manifest = new LaunchManifest(versionManifest, loaderManifest, loaderId,
+                LaunchManifest.featuresOf(launchProfile), SystemHelper.getOS(), launchProfile.followOsRules(),
                 launchProfile.followArchRules(), launchProfile.followOsVersionRules());
 
         assetIndex = manifest.assetIndex();
@@ -117,7 +118,7 @@ public class MinecraftLauncher
         requiredJavaMajor = manifest.requiredJavaMajor();
         allLibraries = manifest.libraries();
 
-        commandBuilder = new LaunchCommandBuilder(launchProfile, authProfile, manifest,
+        commandBuilder = new LaunchCommandBuilder(launchProfile, authProfile, manifest, version,
                 gameDir, nativesDir, assetsDir, librariesDir, logsDir);
     }
 

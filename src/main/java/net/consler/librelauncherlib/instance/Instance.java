@@ -12,7 +12,7 @@ import java.nio.file.Path;
  *
  * @param gameDir the directory containing the minecraft instance
  */
-public record InstanceProfile(Path gameDir)
+public record Instance(Path gameDir)
 {
     /** @return The name of the instance (Directory name).*/
     public String getName()
@@ -139,7 +139,14 @@ public record InstanceProfile(Path gameDir)
 
     public String getVersion() throws IOException
     {
-        JsonObject manifest = VersionManifest.readJson(getFolder().resolve("manifest.json"));
-        return manifest.get("id").getAsString();
+        return getVersionManifest().id();
+    }
+
+    /**
+     * @return the version metadata for this instance
+     */
+    public VersionManifest getVersionManifest() throws IOException
+    {
+        return VersionManifest.fromFile(getFolder().resolve("manifest.json"));
     }
 }

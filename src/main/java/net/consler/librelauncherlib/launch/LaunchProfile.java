@@ -17,7 +17,7 @@ import java.util.Objects;
  * Everything after {@code javaPath} is optional. Use {@link Builder}, which fills in the defaults.
  *
  * @param ramMb maximum heap in megabytes ({@code -Xmx}); 0 leaves it to the JVM
- * @param version the Minecraft version to start
+ * @param version the expected Minecraft version to start, or null to use the id in the instance manifest
  * @param launcherName launcher name reported to the game
  * @param launcherVersion launcher version reported to the game
  * @param gameDir the instance directory
@@ -176,6 +176,12 @@ public record LaunchProfile(
         {
             this.version = version;
             this.gameDir = gameDir;
+        }
+
+        /** Creates a profile that takes the Minecraft version from the instance manifest. */
+        public Builder(Path gameDir)
+        {
+            this(null, gameDir);
         }
 
         /**

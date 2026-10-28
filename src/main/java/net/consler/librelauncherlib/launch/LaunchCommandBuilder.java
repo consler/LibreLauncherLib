@@ -1,7 +1,6 @@
 package net.consler.librelauncherlib.launch;
 
 import net.consler.librelauncherlib.auth.AuthProfile;
-import net.consler.librelauncherlib.instance.VersionManifest;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -18,7 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Turns a VersionManifest plus the launch and auth profiles into the command line that starts the game.
+ * Turns resolved launch metadata plus the launch and auth profiles into the command line that starts the game.
  */
 final class LaunchCommandBuilder
 {
@@ -32,19 +31,21 @@ final class LaunchCommandBuilder
 
     private final LaunchProfile launchProfile;
     private final AuthProfile authProfile;
-    private final VersionManifest manifest;
+    private final LaunchManifest manifest;
+    private final String version;
     private final Path gameDir;
     private final Path nativesDir;
     private final Path assetsDir;
     private final Path librariesDir;
     private final Path logsDir;
 
-    LaunchCommandBuilder(LaunchProfile launchProfile, AuthProfile authProfile, VersionManifest manifest,
+    LaunchCommandBuilder(LaunchProfile launchProfile, AuthProfile authProfile, LaunchManifest manifest, String version,
                          Path gameDir, Path nativesDir, Path assetsDir, Path librariesDir, Path logsDir)
     {
         this.launchProfile = launchProfile;
         this.authProfile = authProfile;
         this.manifest = manifest;
+        this.version = version;
         this.gameDir = gameDir;
         this.nativesDir = nativesDir;
         this.assetsDir = assetsDir;
@@ -115,7 +116,7 @@ final class LaunchCommandBuilder
         StringBuilder sb = new StringBuilder();
         List<String> missing = new ArrayList<>();
 
-        for (VersionManifest.ClasspathEntry entry : manifest.classpathEntries())
+        for (LaunchManifest.ClasspathEntry entry : manifest.classpathEntries())
         {
             Path libPath = librariesDir.resolve(entry.path());
             if (Files.exists(libPath))
@@ -152,7 +153,7 @@ final class LaunchCommandBuilder
 
         Map<String, String> args = new HashMap<>();
         args.put("auth_player_name", nvl(authProfile.username()));
-        args.put("version_name", launchProfile.version());
+        args.put("version_name", version);
         args.put("game_directory", gameDir.toAbsolutePath().toString());
         args.put("assets_root", assetsDir.toAbsolutePath().toString());
         args.put("game_assets", manifest.gameAssets(gameDir, assetsDir).toAbsolutePath().toString());

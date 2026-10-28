@@ -16,7 +16,6 @@ import net.consler.librelauncherlib.nbt.NBT;
 import net.consler.librelauncherlib.util.JavaVersion;
 import net.consler.librelauncherlib.versions.*;
 
-import javax.swing.*;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -25,9 +24,8 @@ import java.util.concurrent.CompletableFuture;
 public class Main
 {
 
-    private static final String version = "1.21.11";
+    private static final String version = "26.2";
     private static final Path gameDir = Path.of("/home/consler/TEST");
-    private static final Path java25Bin = Path.of("/home/consler/.jdks/jbr-25.0.4.1-2/bin/java");
 
     static void main(String[] args)
     {
@@ -54,6 +52,8 @@ public class Main
     private static void install()
     {
         new MinecraftInstaller().install(version, gameDir, new ModloaderProfile(ModloaderProfile.FABRIC_ID, "0.20.1"));
+
+        Instance instance = new Instance(gameDir);
     }
 
     private static void run()
@@ -227,5 +227,10 @@ public class Main
         JavaVersion.autoDetect().forEach(System.out::println);
 
         System.out.println(JavaVersion.current());
+    }
+
+    private static void versionManifest()
+    {
+
     }
 }
