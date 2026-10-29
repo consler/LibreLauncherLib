@@ -76,13 +76,25 @@ public record ModrinthVersion(
     )
     {
         /** @return Whether this dependency is required. */
-        public boolean isRequired()     { return dependencyType == DependencyType.REQUIRED; }
+        public boolean isRequired()
+        {
+            return dependencyType == DependencyType.REQUIRED;
+        }
         /** @return Whether this dependency is optional. */
-        public boolean isOptional()     { return dependencyType == DependencyType.OPTIONAL; }
+        public boolean isOptional()
+        {
+            return dependencyType == DependencyType.OPTIONAL;
+        }
         /** @return Whether this dependency is incompatible. */
-        public boolean isIncompatible() { return dependencyType == DependencyType.INCOMPATIBLE; }
+        public boolean isIncompatible()
+        {
+            return dependencyType == DependencyType.INCOMPATIBLE;
+        }
         /** @return Whether this dependency is embedded. */
-        public boolean isEmbedded()     { return dependencyType == DependencyType.EMBEDDED; }
+        public boolean isEmbedded()
+        {
+            return dependencyType == DependencyType.EMBEDDED;
+        }
     }
 
     /**

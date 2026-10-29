@@ -75,9 +75,9 @@ public record ModrinthProject(
         /**
          * @return The project type as an enum, or null if unknown.
          */
-        public ProjectType type()
+        public ModrinthProjectType type()
         {
-                return ProjectType.fromId(projectType);
+                return ModrinthProjectType.fromId(projectType);
         }
 
         /**
@@ -111,7 +111,7 @@ public record ModrinthProject(
          */
         public Mod toMod(Path downloadedFile)
         {
-                requireType(ProjectType.MOD);
+                requireType(ModrinthProjectType.MOD);
                 requireDownloadedFile(downloadedFile);
                 return new Mod(downloadedFile.toFile());
         }
@@ -124,7 +124,7 @@ public record ModrinthProject(
          */
         public Datapack toDatapack(Path downloadedFile)
         {
-                requireType(ProjectType.DATAPACK);
+                requireType(ModrinthProjectType.DATAPACK);
                 requireDownloadedFile(downloadedFile);
                 return new Datapack(downloadedFile);
         }
@@ -137,7 +137,7 @@ public record ModrinthProject(
          */
         public Mrpack toModpack(Path downloadedFile)
         {
-                requireType(ProjectType.MODPACK);
+                requireType(ModrinthProjectType.MODPACK);
                 requireDownloadedFile(downloadedFile);
                 return new Mrpack(downloadedFile);
         }
@@ -150,7 +150,7 @@ public record ModrinthProject(
          */
         public ResourcePack toResourcePack(Path downloadedFile)
         {
-                requireType(ProjectType.RESOURCE_PACK);
+                requireType(ModrinthProjectType.RESOURCE_PACK);
                 requireDownloadedFile(downloadedFile);
                 return new ResourcePack(downloadedFile);
         }
@@ -163,7 +163,7 @@ public record ModrinthProject(
          */
         public Shader toShader(Path downloadedFile)
         {
-                requireType(ProjectType.SHADER);
+                requireType(ModrinthProjectType.SHADER);
                 requireDownloadedFile(downloadedFile);
                 return new Shader(downloadedFile.toFile());
         }
@@ -176,7 +176,7 @@ public record ModrinthProject(
          */
         public Plugin toPlugin(Path downloadedFile)
         {
-                requireType(ProjectType.PLUGIN);
+                requireType(ModrinthProjectType.PLUGIN);
                 requireDownloadedFile(downloadedFile);
                 return new Plugin(downloadedFile.toFile());
         }
@@ -192,7 +192,7 @@ public record ModrinthProject(
         public CompletableFuture<Mod> downloadAsMod(
                 ModrinthVersion version, Path destination, String userAgent)
         {
-                return downloadAs(version, destination, userAgent, ProjectType.MOD, this::toMod);
+                return downloadAs(version, destination, userAgent, ModrinthProjectType.MOD, this::toMod);
         }
 
         /**
@@ -206,7 +206,7 @@ public record ModrinthProject(
         public CompletableFuture<Datapack> downloadAsDatapack(
                 ModrinthVersion version, Path destination, String userAgent)
         {
-                return downloadAs(version, destination, userAgent, ProjectType.DATAPACK, this::toDatapack);
+                return downloadAs(version, destination, userAgent, ModrinthProjectType.DATAPACK, this::toDatapack);
         }
 
         /**
@@ -220,7 +220,7 @@ public record ModrinthProject(
         public CompletableFuture<Mrpack> downloadAsModpack(
                 ModrinthVersion version, Path destination, String userAgent)
         {
-                return downloadAs(version, destination, userAgent, ProjectType.MODPACK, this::toModpack);
+                return downloadAs(version, destination, userAgent, ModrinthProjectType.MODPACK, this::toModpack);
         }
 
         /**
@@ -234,7 +234,7 @@ public record ModrinthProject(
         public CompletableFuture<ResourcePack> downloadAsResourcePack(
                 ModrinthVersion version, Path destination, String userAgent)
         {
-                return downloadAs(version, destination, userAgent, ProjectType.RESOURCE_PACK, this::toResourcePack);
+                return downloadAs(version, destination, userAgent, ModrinthProjectType.RESOURCE_PACK, this::toResourcePack);
         }
 
         /**
@@ -248,7 +248,7 @@ public record ModrinthProject(
         public CompletableFuture<Shader> downloadAsShader(
                 ModrinthVersion version, Path destination, String userAgent)
         {
-                return downloadAs(version, destination, userAgent, ProjectType.SHADER, this::toShader);
+                return downloadAs(version, destination, userAgent, ModrinthProjectType.SHADER, this::toShader);
         }
 
         /**
@@ -262,7 +262,7 @@ public record ModrinthProject(
         public CompletableFuture<Plugin> downloadAsPlugin(
                 ModrinthVersion version, Path destination, String userAgent)
         {
-                return downloadAs(version, destination, userAgent, ProjectType.PLUGIN, this::toPlugin);
+                return downloadAs(version, destination, userAgent, ModrinthProjectType.PLUGIN, this::toPlugin);
         }
 
         /**
@@ -277,7 +277,7 @@ public record ModrinthProject(
 
         private <T> CompletableFuture<T> downloadAs(
                 ModrinthVersion version, Path destination, String userAgent,
-                ProjectType expectedType, Function<Path, T> converter)
+                ModrinthProjectType expectedType, Function<Path, T> converter)
         {
                 requireType(expectedType);
                 if (version == null)
@@ -293,7 +293,7 @@ public record ModrinthProject(
                 return Modrinth.downloadVersionFile(file, destination, userAgent).thenApply(converter);
         }
 
-        private void requireType(ProjectType expected)
+        private void requireType(ModrinthProjectType expected)
         {
                 if (type() != expected)
                         throw new IllegalStateException("Project is " + projectType + ", not " + expected.getId());

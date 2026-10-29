@@ -3,7 +3,7 @@ package net.consler.librelauncherlib.integration.modrinth;
 /**
  * Supported project types on Modrinth.
  */
-public enum ProjectType
+public enum ModrinthProjectType
 {
     MOD("mod"),
     MODPACK("modpack"),
@@ -14,7 +14,7 @@ public enum ProjectType
 
     private final String id;
 
-    ProjectType(String id)
+    ModrinthProjectType(String id)
     {
         this.id = id;
     }
@@ -39,10 +39,10 @@ public enum ProjectType
      * @param id The Modrinth API identifier, e.g. "resourcepack".
      * @return The matching type, or null if unknown.
      */
-    public static ProjectType fromId(String id)
+    public static ModrinthProjectType fromId(String id)
     {
         if (id == null) return null;
-        for (ProjectType type : values())
+        for (ModrinthProjectType type : values())
         {
             if (type.id.equalsIgnoreCase(id)) return type;
         }

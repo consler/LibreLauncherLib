@@ -11,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
@@ -22,7 +23,7 @@ public class Modrinth
     /**
      * Runs a search and returns one page including paging info (offset, limit, total hits).
      */
-    public static CompletableFuture<SearchResult> search(SearchQuery query, String userAgent)
+    public static CompletableFuture<SearchResult> search(ModrinthSearchQuery query, String userAgent)
     {
         if (query == null) throw new IllegalArgumentException("query must not be null");
         return fetchPageAsync(query, userAgent);
@@ -33,7 +34,7 @@ public class Modrinth
      * Pass Integer.MAX_VALUE to fetch everything that matches. Starts at the query's own offset.
      * Requests are sent one after another, so large values take a while.
      */
-    public static CompletableFuture<List<ModrinthProject>> searchAll(SearchQuery query, int maxResults, String userAgent)
+    public static CompletableFuture<List<ModrinthProject>> searchAll(ModrinthSearchQuery query, int maxResults, String userAgent)
     {
         if (query == null) throw new IllegalArgumentException("query must not be null");
         if (maxResults < 1) throw new IllegalArgumentException("maxResults must be >= 1");
@@ -53,9 +54,9 @@ public class Modrinth
      *
      * @param type Project type filter, or null for all types.
      */
-    public static CompletableFuture<List<ModrinthProject>> searchProjects(String query, ProjectType type, String userAgent)
+    public static CompletableFuture<List<ModrinthProject>> searchProjects(String query, ModrinthProjectType type, String userAgent)
     {
-        SearchQuery searchQuery = new SearchQuery(query);
+        ModrinthSearchQuery searchQuery = new ModrinthSearchQuery(query);
         if (type != null) searchQuery.projectType(type);
         return search(searchQuery, userAgent).thenApply(SearchResult::hits);
     }
@@ -63,37 +64,37 @@ public class Modrinth
     /** Searches Modrinth mods. */
     public static CompletableFuture<List<ModrinthProject>> searchMods(String query, String userAgent)
     {
-        return searchProjects(query, ProjectType.MOD, userAgent);
+        return searchProjects(query, ModrinthProjectType.MOD, userAgent);
     }
 
     /** Searches Modrinth modpacks. */
     public static CompletableFuture<List<ModrinthProject>> searchModpacks(String query, String userAgent)
     {
-        return searchProjects(query, ProjectType.MODPACK, userAgent);
+        return searchProjects(query, ModrinthProjectType.MODPACK, userAgent);
     }
 
     /** Searches Modrinth resource packs. */
     public static CompletableFuture<List<ModrinthProject>> searchResourcePacks(String query, String userAgent)
     {
-        return searchProjects(query, ProjectType.RESOURCE_PACK, userAgent);
+        return searchProjects(query, ModrinthProjectType.RESOURCE_PACK, userAgent);
     }
 
     /** Searches Modrinth shaders. */
     public static CompletableFuture<List<ModrinthProject>> searchShaders(String query, String userAgent)
     {
-        return searchProjects(query, ProjectType.SHADER, userAgent);
+        return searchProjects(query, ModrinthProjectType.SHADER, userAgent);
     }
 
     /** Searches Modrinth plugins. */
     public static CompletableFuture<List<ModrinthProject>> searchPlugins(String query, String userAgent)
     {
-        return searchProjects(query, ProjectType.PLUGIN, userAgent);
+        return searchProjects(query, ModrinthProjectType.PLUGIN, userAgent);
     }
 
     /** Searches Modrinth datapacks. */
     public static CompletableFuture<List<ModrinthProject>> searchDatapacks(String query, String userAgent)
     {
-        return searchProjects(query, ProjectType.DATAPACK, userAgent);
+        return searchProjects(query, ModrinthProjectType.DATAPACK, userAgent);
     }
 
     /**
@@ -119,14 +120,14 @@ public class Modrinth
     /** Fetches all project versions without filters. */
     public static CompletableFuture<List<ModrinthVersion>> getProjectVersions(String slugOrId, String userAgent)
     {
-        return getProjectVersions(slugOrId, new VersionQuery(), userAgent);
+        return getProjectVersions(slugOrId, new ModrinthVersionQuery(), userAgent);
     }
 
     /**
      * Fetches project versions filtered by loaders, game versions, or featured status.
      */
     public static CompletableFuture<List<ModrinthVersion>> getProjectVersions(
-            String slugOrId, VersionQuery query, String userAgent)
+            String slugOrId, ModrinthVersionQuery query, String userAgent)
     {
         requireSlugOrId(slugOrId);
         if (query == null)
@@ -145,6 +146,26 @@ public class Modrinth
     {
         requireSlugOrId(versionId);
         return ModrinthApiClient.get("/version/" + enc(versionId), userAgent, ModrinthVersion.class);
+    }
+
+    /**
+     * Fetches a version by the SHA-1 hash of one of its files.
+     */
+    public static CompletableFuture<ModrinthVersion> getVersionBySha1(String sha1, String userAgent)
+    {
+        requireSha1(sha1);
+        return ModrinthApiClient.get(
+                "/version_file/" + sha1.toLowerCase(Locale.ROOT) + "?algorithm=sha1",
+                userAgent, ModrinthVersion.class);
+    }
+
+    /**
+     * Fetches the project containing a version file with the given SHA-1 hash.
+     */
+    public static CompletableFuture<ModrinthProject> getProjectBySha1(String sha1, String userAgent)
+    {
+        return getVersionBySha1(sha1, userAgent)
+                .thenCompose(version -> getProject(version.projectId(), userAgent));
     }
 
     /**
@@ -260,18 +281,18 @@ public class Modrinth
         }
     }
 
-    private static CompletableFuture<SearchResult> fetchPageAsync(SearchQuery query, String userAgent)
+    private static CompletableFuture<SearchResult> fetchPageAsync(ModrinthSearchQuery query, String userAgent)
     {
         return ModrinthApiClient.get("/search?" + query.toQueryString(), userAgent, SearchResult.class);
     }
 
     private static CompletableFuture<List<ModrinthProject>> collectPages(
-            SearchQuery query, int maxResults, int offset, String userAgent, List<ModrinthProject> collected)
+            ModrinthSearchQuery query, int maxResults, int offset, String userAgent, List<ModrinthProject> collected)
     {
         if (collected.size() >= maxResults)
             return CompletableFuture.completedFuture(List.copyOf(collected));
 
-        int pageSize = Math.min(SearchQuery.MAX_LIMIT, maxResults - collected.size());
+        int pageSize = Math.min(ModrinthSearchQuery.MAX_LIMIT, maxResults - collected.size());
         return fetchPageAsync(query.copy().offset(offset).limit(pageSize), userAgent).thenCompose(page ->
         {
             collected.addAll(page.hits());
@@ -285,6 +306,12 @@ public class Modrinth
     {
         if (slugOrId == null || slugOrId.isBlank())
             throw new IllegalArgumentException("slugOrId must not be empty");
+    }
+
+    private static void requireSha1(String sha1)
+    {
+        if (sha1 == null || !sha1.matches("(?i)[0-9a-f]{40}"))
+            throw new IllegalArgumentException("sha1 must be 40 hexadecimal characters");
     }
 
     private static void requireUserAgent(String userAgent)

@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * Builder for filters accepted by Modrinth's project versions endpoint.
  */
-public final class VersionQuery
+public final class ModrinthVersionQuery
 {
     private static final Gson GSON = new Gson();
 
@@ -24,7 +24,7 @@ public final class VersionQuery
      * @param loaders Loader IDs such as {@code fabric} or {@code quilt}.
      * @return This query.
      */
-    public VersionQuery loader(String... loaders)
+    public ModrinthVersionQuery loader(String... loaders)
     {
         addValues(this.loaders, loaders, "loader");
         return this;
@@ -36,7 +36,7 @@ public final class VersionQuery
      * @param gameVersions Minecraft version IDs.
      * @return This query.
      */
-    public VersionQuery gameVersion(String... gameVersions)
+    public ModrinthVersionQuery gameVersion(String... gameVersions)
     {
         addValues(this.gameVersions, gameVersions, "game version");
         return this;
@@ -48,7 +48,7 @@ public final class VersionQuery
      * @param featuredOnly True to include featured versions only.
      * @return This query.
      */
-    public VersionQuery featuredOnly(boolean featuredOnly)
+    public ModrinthVersionQuery featuredOnly(boolean featuredOnly)
     {
         this.featuredOnly = featuredOnly;
         return this;

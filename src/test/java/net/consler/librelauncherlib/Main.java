@@ -7,8 +7,8 @@ import net.consler.librelauncherlib.auth.UserCancelledException;
 import net.consler.librelauncherlib.install.MinecraftInstaller;
 import net.consler.librelauncherlib.instance.*;
 import net.consler.librelauncherlib.integration.modrinth.Modrinth;
-import net.consler.librelauncherlib.integration.modrinth.ProjectType;
-import net.consler.librelauncherlib.integration.modrinth.SearchQuery;
+import net.consler.librelauncherlib.integration.modrinth.ModrinthProjectType;
+import net.consler.librelauncherlib.integration.modrinth.ModrinthSearchQuery;
 import net.consler.librelauncherlib.launch.LaunchProfile;
 import net.consler.librelauncherlib.launch.MinecraftLauncher;
 import net.consler.librelauncherlib.modloader.ModloaderProfile;
@@ -198,8 +198,8 @@ public class Main
     {
         String ua = "consler/LibreLauncher/1.0";
 
-        Modrinth.SearchResult page = Modrinth.search(new SearchQuery("sodium")
-                        .projectType(ProjectType.MOD)
+        Modrinth.SearchResult page = Modrinth.search(new ModrinthSearchQuery("sodium")
+                        .projectType(ModrinthProjectType.MOD)
                         .offset(10)
                         .limit(20),
                 ua).join();
