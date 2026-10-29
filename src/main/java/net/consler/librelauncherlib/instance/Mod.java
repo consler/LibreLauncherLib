@@ -12,8 +12,11 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.List;
+import java.util.Map;
 import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -26,6 +29,8 @@ import java.util.regex.Pattern;
  */
 public class Mod
 {
+    private static final String[] FALLBACK_ICONS = { "pack.png", "logo.png", "icon.png" };
+
     private String modId = "unknown";
     private String name;
     private String description = "No description provided.";
@@ -36,45 +41,36 @@ public class Mod
     private String iconPath = null;
     private BufferedImage icon = null;
 
+    public Mod(Path modPath)
+    {
+        this(modPath.toFile());
+    }
+
     public Mod(File modFile)
     {
         this.name = modFile.getName();
 
         try (JarFile jar = new JarFile(modFile))
         {
-            if (jar.getJarEntry("quilt.mod.json") != null)
+            try
             {
-                this.loaderType = ModloaderProfile.QUILT_ID;
-                parseFabricOrQuilt(jar, "quilt.mod.json", true);
+                parseMetadata(jar);
             }
-            else if (jar.getJarEntry("fabric.mod.json") != null)
+            catch (Exception ignored)
             {
-                this.loaderType = ModloaderProfile.FABRIC_ID;
-                parseFabricOrQuilt(jar, "fabric.mod.json", false);
-            }
-            else if (jar.getJarEntry("META-INF/neoforge.mods.toml") != null)
-            {
-                this.loaderType = ModloaderProfile.NEOFORGE_ID;
-                parseForge(jar, "META-INF/neoforge.mods.toml");
-            }
-            else if (jar.getJarEntry("META-INF/mods.toml") != null)
-            {
-                this.loaderType = ModloaderProfile.FORGE_ID;
-                parseForge(jar, "META-INF/mods.toml");
-            }
-            else if (jar.getJarEntry("mcmod.info") != null)
-            {
-                this.loaderType = ModloaderProfile.FORGE_ID;
-                parseLegacyForge(jar);
             }
 
-            if (this.version == null || this.version.startsWith("${") || this.version.equals("Unknown"))
+            if (!isUsable(this.version) || this.version.equals("Unknown"))
             {
                 String manifestVersion = extractVersionFromManifest(jar);
                 if (manifestVersion != null)
                 {
                     this.version = manifestVersion;
                 }
+            }
+            if (!isUsable(this.version))
+            {
+                this.version = "Unknown";
             }
 
             loadIcon(jar);
@@ -85,68 +81,138 @@ public class Mod
         }
     }
 
+    private void parseMetadata(JarFile jar) throws IOException
+    {
+        if (jar.getJarEntry("quilt.mod.json") != null)
+        {
+            this.loaderType = ModloaderProfile.QUILT_ID;
+            parseFabricOrQuilt(jar, "quilt.mod.json", true);
+        }
+        else if (jar.getJarEntry("fabric.mod.json") != null)
+        {
+            this.loaderType = ModloaderProfile.FABRIC_ID;
+            parseFabricOrQuilt(jar, "fabric.mod.json", false);
+        }
+        else if (jar.getJarEntry("META-INF/neoforge.mods.toml") != null)
+        {
+            this.loaderType = ModloaderProfile.NEOFORGE_ID;
+            parseForge(jar, "META-INF/neoforge.mods.toml");
+        }
+        else if (jar.getJarEntry("META-INF/mods.toml") != null)
+        {
+            this.loaderType = ModloaderProfile.FORGE_ID;
+            parseForge(jar, "META-INF/mods.toml");
+        }
+        else if (jar.getJarEntry("mcmod.info") != null)
+        {
+            this.loaderType = ModloaderProfile.FORGE_ID;
+            parseLegacyForge(jar);
+        }
+    }
+
     private void parseFabricOrQuilt(JarFile jar, String entryName, boolean isQuilt) throws IOException
     {
         String content = readEntry(jar, entryName);
         if (content == null) return;
 
         JsonObject root = JsonParser.parseString(content).getAsJsonObject();
+
+        JsonObject idSource = root;
         JsonObject meta = root;
 
-        if (isQuilt && root.has("quilt_loader") && root.getAsJsonObject("quilt_loader").has("metadata"))
+        if (isQuilt)
         {
-            meta = root.getAsJsonObject("quilt_loader").getAsJsonObject("metadata");
-
-            if (root.getAsJsonObject("quilt_loader").has("id"))
-            {
-                this.modId = root.getAsJsonObject("quilt_loader").get("id").getAsString();
-            }
+            JsonObject loader = getObject(root, "quilt_loader");
+            idSource = loader != null ? loader : new JsonObject();
+            JsonObject metadata = getObject(idSource, "metadata");
+            meta = metadata != null ? metadata : new JsonObject();
         }
 
-        if (meta.has("id")) this.modId = meta.get("id").getAsString();
-        if (meta.has("name")) this.name = meta.get("name").getAsString();
-        if (meta.has("version")) this.version = meta.get("version").getAsString();
-        if (meta.has("description")) this.description = meta.get("description").getAsString();
+        String value;
+        if ((value = getString(idSource, "id")) != null) this.modId = value;
+        if ((value = getString(idSource, "version")) != null) this.version = value;
+        if ((value = getString(meta, "name")) != null) this.name = value;
+        if ((value = getString(meta, "description")) != null) this.description = value;
+        if ((value = getLicense(meta.get("license"))) != null) this.license = value;
 
-        if (meta.has("license"))
+        JsonElement authElement = meta.get("authors");
+        if (authElement != null && authElement.isJsonArray())
         {
-            JsonElement licElement = meta.get("license");
-            if (licElement.isJsonPrimitive()) this.license = licElement.getAsString();
-            else if (licElement.isJsonArray() && !licElement.getAsJsonArray().isEmpty())
+            for (JsonElement e : authElement.getAsJsonArray())
             {
-                this.license = licElement.getAsJsonArray().get(0).getAsString();
-            }
-        }
-
-        if (meta.has("authors"))
-        {
-            JsonElement authElement = meta.get("authors");
-            if (authElement.isJsonArray())
-            {
-                for (JsonElement e : authElement.getAsJsonArray())
+                if (e.isJsonPrimitive()) this.authors.add(e.getAsString());
+                else if (e.isJsonObject() && getString(e.getAsJsonObject(), "name") != null)
                 {
-                    if (e.isJsonPrimitive()) this.authors.add(e.getAsString());
-                    else if (e.isJsonObject() && e.getAsJsonObject().has("name"))
-                    {
-                        this.authors.add(e.getAsJsonObject().get("name").getAsString());
-                    }
+                    this.authors.add(getString(e.getAsJsonObject(), "name"));
                 }
             }
         }
 
-        if (meta.has("icon"))
+        JsonObject contributors = getObject(meta, "contributors");
+        if (contributors != null)
         {
-            JsonElement iconElement = meta.get("icon");
+            this.authors.addAll(contributors.keySet());
+        }
+
+        JsonElement iconElement = meta.get("icon");
+        if (iconElement != null)
+        {
             if (iconElement.isJsonPrimitive())
             {
                 this.iconPath = iconElement.getAsString();
             }
-            else if (iconElement.isJsonObject() && !iconElement.getAsJsonObject().keySet().isEmpty())
+            else if (iconElement.isJsonObject())
             {
-                String firstKey = iconElement.getAsJsonObject().keySet().iterator().next();
-                this.iconPath = iconElement.getAsJsonObject().get(firstKey).getAsString();
+                this.iconPath = getLargestIcon(iconElement.getAsJsonObject());
             }
         }
+    }
+
+    private static String getLargestIcon(JsonObject icons)
+    {
+        String best = null;
+        int bestSize = -1;
+
+        for (Map.Entry<String, JsonElement> entry : icons.entrySet())
+        {
+            if (!entry.getValue().isJsonPrimitive()) continue;
+
+            int size;
+            try
+            {
+                size = Integer.parseInt(entry.getKey());
+            }
+            catch (NumberFormatException e)
+            {
+                size = 0;
+            }
+
+            if (size > bestSize)
+            {
+                bestSize = size;
+                best = entry.getValue().getAsString();
+            }
+        }
+        return best;
+    }
+
+    private static String getLicense(JsonElement el)
+    {
+        if (el == null || el.isJsonNull()) return null;
+        if (el.isJsonPrimitive()) return el.getAsString();
+
+        if (el.isJsonObject())
+        {
+            JsonObject o = el.getAsJsonObject();
+            String id = getString(o, "id");
+            return id != null ? id : getString(o, "name");
+        }
+
+        if (el.isJsonArray() && !el.getAsJsonArray().isEmpty())
+        {
+            return getLicense(el.getAsJsonArray().get(0));
+        }
+        return null;
     }
 
     private void parseForge(JarFile jar, String entryName) throws IOException
@@ -154,36 +220,87 @@ public class Mod
         String content = readEntry(jar, entryName);
         if (content == null) return;
 
-        String parsedId = extractRegex(content, "(?m)^\\s*modId\\s*=\\s*\"([^\"]+)\"");
-        if (parsedId != null) this.modId = parsedId;
+        String block = firstModsBlock(content);
 
-        String parsedName = extractRegex(content, "(?m)^\\s*displayName\\s*=\\s*\"([^\"]+)\"");
-        if (parsedName != null) this.name = parsedName;
+        String value;
+        if ((value = tomlString(block, "modId")) != null) this.modId = value;
+        if ((value = tomlString(block, "displayName")) != null) this.name = value;
+        if ((value = tomlString(block, "version")) != null) this.version = value;
+        if ((value = tomlString(block, "description")) != null) this.description = value;
+        if ((value = tomlString(content, "license")) != null) this.license = value; // top-level key
 
-        String parsedVersion = extractRegex(content, "(?m)^\\s*version\\s*=\\s*\"([^\"]+)\"");
-        if (parsedVersion != null) this.version = parsedVersion;
-
-        String parsedDesc = extractRegex(content, "(?m)^\\s*description\\s*=\\s*'''(.*?)'''");
-        if (parsedDesc == null)
+        if ((value = tomlString(block, "authors")) != null)
         {
-            parsedDesc = extractRegex(content, "(?m)^\\s*description\\s*=\\s*\"([^\"]+)\"");
-        }
-        if (parsedDesc != null) this.description = parsedDesc;
-
-        String parsedLicense = extractRegex(content, "(?m)^\\s*license\\s*=\\s*\"([^\"]+)\"");
-        if (parsedLicense != null) this.license = parsedLicense;
-
-        String parsedAuthors = extractRegex(content, "(?m)^\\s*authors\\s*=\\s*\"([^\"]+)\"");
-        if (parsedAuthors != null)
-        {
-            for (String author : parsedAuthors.split(","))
+            for (String author : value.split(","))
             {
-                this.authors.add(author.trim());
+                String trimmed = author.trim();
+                if (!trimmed.isEmpty()) this.authors.add(trimmed);
             }
         }
 
-        String parsedIcon = extractRegex(content, "(?m)^\\s*logoFile\\s*=\\s*\"([^\"]+)\"");
-        if (parsedIcon != null) this.iconPath = parsedIcon;
+        if ((value = tomlString(block, "logoFile")) != null) this.iconPath = value;
+    }
+
+    private static String firstModsBlock(String toml)
+    {
+        Matcher start = Pattern.compile("(?m)^[ \\t]*\\[\\[[ \\t]*mods[ \\t]*]]").matcher(toml);
+        if (!start.find()) return toml;
+
+        int from = start.end();
+        Matcher next = Pattern.compile("(?m)^[ \\t]*\\[").matcher(toml);
+        return next.find(from) ? toml.substring(from, next.start()) : toml.substring(from);
+    }
+
+    private static String tomlString(String content, String key)
+    {
+        String prefix = "(?m)^[ \\t]*" + Pattern.quote(key) + "[ \\t]*=[ \\t]*";
+        String[] patterns = {
+                prefix + "'''(.*?)'''",
+                prefix + "\"\"\"(.*?)\"\"\"",
+                prefix + "\"((?:[^\"\\\\\\r\\n]|\\\\.)*)\"",
+                prefix + "'([^'\\r\\n]*)'"
+        };
+        boolean[] basic = { false, true, true, false };
+
+        for (int i = 0; i < patterns.length; i++)
+        {
+            Matcher matcher = Pattern.compile(patterns[i], Pattern.DOTALL).matcher(content);
+            if (matcher.find())
+            {
+                String value = matcher.group(1).trim();
+                if (basic[i]) value = unescapeToml(value);
+                if (!value.isEmpty()) return value;
+            }
+        }
+        return null;
+    }
+
+    private static String unescapeToml(String s)
+    {
+        if (s.indexOf('\\') < 0) return s;
+
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < s.length(); i++)
+        {
+            char c = s.charAt(i);
+            if (c == '\\' && i + 1 < s.length())
+            {
+                char n = s.charAt(++i);
+                switch (n)
+                {
+                    case 'n' -> sb.append('\n');
+                    case 't' -> sb.append('\t');
+                    case '"' -> sb.append('"');
+                    case '\\' -> sb.append('\\');
+                    default -> sb.append(c).append(n);
+                }
+            }
+            else
+            {
+                sb.append(c);
+            }
+        }
+        return sb.toString();
     }
 
     private void parseLegacyForge(JarFile jar) throws IOException
@@ -196,32 +313,42 @@ public class Mod
 
         if (root.isJsonArray())
         {
-            JsonArray array = root.getAsJsonArray();
-            if (!array.isEmpty() && array.get(0).isJsonObject()) modMeta = array.get(0).getAsJsonObject();
+            modMeta = firstObject(root.getAsJsonArray());
         }
-        else if (root.isJsonObject() && root.getAsJsonObject().has("modList"))
+        else if (root.isJsonObject())
         {
-            JsonArray array = root.getAsJsonObject().getAsJsonArray("modList");
-            if (!array.isEmpty() && array.get(0).isJsonObject()) modMeta = array.get(0).getAsJsonObject();
+            JsonElement list = root.getAsJsonObject().get("modList");
+            if (list != null && list.isJsonArray()) modMeta = firstObject(list.getAsJsonArray());
+            else modMeta = root.getAsJsonObject();
         }
 
-        if (modMeta != null)
-        {
-            if (modMeta.has("modid")) this.modId = modMeta.get("modid").getAsString();
-            if (modMeta.has("name")) this.name = modMeta.get("name").getAsString();
-            if (modMeta.has("version")) this.version = modMeta.get("version").getAsString();
-            if (modMeta.has("description")) this.description = modMeta.get("description").getAsString();
-            if (modMeta.has("logoFile")) this.iconPath = modMeta.get("logoFile").getAsString();
+        if (modMeta == null) return;
 
-            if (modMeta.has("authorList"))
+        String value;
+        if ((value = getString(modMeta, "modid")) != null) this.modId = value;
+        if ((value = getString(modMeta, "name")) != null) this.name = value;
+        if ((value = getString(modMeta, "version")) != null) this.version = value;
+        if ((value = getString(modMeta, "description")) != null) this.description = value;
+        if ((value = getString(modMeta, "logoFile")) != null) this.iconPath = value;
+
+        for (String key : new String[] { "authorList", "authors" })
+        {
+            JsonElement el = modMeta.get(key);
+            if (el != null && el.isJsonArray())
             {
-                JsonArray authorArray = modMeta.getAsJsonArray("authorList");
-                for (JsonElement e : authorArray)
+                for (JsonElement e : el.getAsJsonArray())
                 {
-                    this.authors.add(e.getAsString());
+                    if (e.isJsonPrimitive()) this.authors.add(e.getAsString());
                 }
+                break;
             }
         }
+    }
+
+    private static JsonObject firstObject(JsonArray array)
+    {
+        if (!array.isEmpty() && array.get(0).isJsonObject()) return array.get(0).getAsJsonObject();
+        return null;
     }
 
     private String extractVersionFromManifest(JarFile jar)
@@ -232,11 +359,12 @@ public class Mod
             if (manifest != null)
             {
                 Attributes attr = manifest.getMainAttributes();
+
                 String implVer = attr.getValue("Implementation-Version");
-                if (implVer != null && !implVer.isEmpty()) return implVer;
+                if (isUsable(implVer)) return implVer;
 
                 String specVer = attr.getValue("Specification-Version");
-                if (specVer != null && !specVer.isEmpty()) return specVer;
+                if (isUsable(specVer)) return specVer;
             }
         }
         catch (IOException ignored) {}
@@ -245,21 +373,62 @@ public class Mod
 
     private void loadIcon(JarFile jar)
     {
-        if (this.iconPath == null || this.iconPath.isEmpty()) return;
-
-        String normalizedPath = this.iconPath.startsWith("/") ? this.iconPath.substring(1) : this.iconPath;
-        JarEntry iconEntry = jar.getJarEntry(normalizedPath);
-
-        if (iconEntry != null)
+        if (this.iconPath != null && !this.iconPath.isBlank())
         {
-            try (InputStream is = jar.getInputStream(iconEntry))
+            BufferedImage image = readImage(jar, findEntry(jar, this.iconPath, true));
+            if (image != null)
             {
-                this.icon = ImageIO.read(is);
+                this.icon = image;
+                return;
             }
-            catch (IOException e)
+        }
+
+        for (String fallback : FALLBACK_ICONS)
+        {
+            BufferedImage image = readImage(jar, findEntry(jar, fallback, false));
+            if (image != null)
             {
-                throw new RuntimeException("Failed to parse icon image: " + normalizedPath, e);
+                this.icon = image;
+                return;
             }
+        }
+    }
+
+    private static JarEntry findEntry(JarFile jar, String path, boolean ignoreCase)
+    {
+        String normalized = path.trim().replace('\\', '/');
+        while (normalized.startsWith("./") || normalized.startsWith("/"))
+        {
+            normalized = normalized.startsWith("./") ? normalized.substring(2) : normalized.substring(1);
+        }
+        if (normalized.isEmpty()) return null;
+
+        JarEntry exact = jar.getJarEntry(normalized);
+        if (exact != null && !exact.isDirectory()) return exact;
+
+        if (ignoreCase)
+        {
+            Enumeration<JarEntry> entries = jar.entries();
+            while (entries.hasMoreElements())
+            {
+                JarEntry entry = entries.nextElement();
+                if (!entry.isDirectory() && entry.getName().equalsIgnoreCase(normalized)) return entry;
+            }
+        }
+        return null;
+    }
+
+    private static BufferedImage readImage(JarFile jar, JarEntry entry)
+    {
+        if (entry == null) return null;
+
+        try (InputStream is = jar.getInputStream(entry))
+        {
+            return ImageIO.read(is);
+        }
+        catch (Exception ignored)
+        {
+            return null;
         }
     }
 
@@ -269,15 +438,29 @@ public class Mod
         if (entry == null) return null;
         try (InputStream is = jar.getInputStream(entry))
         {
-            return new String(is.readAllBytes(), StandardCharsets.UTF_8);
+            String text = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+            return text.startsWith("\uFEFF") ? text.substring(1) : text; // strip BOM
         }
     }
 
-    private String extractRegex(String content, String regex)
+    private static String getString(JsonObject obj, String key)
     {
-        Pattern pattern = Pattern.compile(regex, Pattern.DOTALL);
-        Matcher matcher = pattern.matcher(content);
-        return matcher.find() ? matcher.group(1).trim() : null;
+        if (obj == null) return null;
+        JsonElement el = obj.get(key);
+        if (el == null || !el.isJsonPrimitive()) return null;
+        String s = el.getAsString().trim();
+        return s.isEmpty() ? null : s;
+    }
+
+    private static JsonObject getObject(JsonObject obj, String key)
+    {
+        JsonElement el = obj.get(key);
+        return el != null && el.isJsonObject() ? el.getAsJsonObject() : null;
+    }
+
+    private static boolean isUsable(String value)
+    {
+        return value != null && !value.isBlank() && !value.contains("${");
     }
 
     public String getModId()

@@ -78,7 +78,7 @@ public class Main
     {
         System.out.println(QuiltVersions.getVersionsCompatibleWith(version));
         System.out.println(FabricVersions.getVersionsCompatibleWith(version));
-        System.out.println(ForgeVersions.getVersionsCompatibleWith(version));
+        System.out.println(ForgeVersions.getVersionsCompatibleWith("1.12.2"));
         System.out.println(NeoforgeVersions.getVersionsCompatibleWith(version));
         System.out.println(VanillaVersions.getVersionsFiltered(false, false, true, true));
     }
