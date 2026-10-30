@@ -14,6 +14,16 @@ import java.nio.file.Path;
 public class FabricInstaller
 {
     /**
+     * Removes Fabric's profile and the libraries listed by that profile.
+     *
+     * @param gameDir the game directory containing the Fabric installation
+     */
+    public static void uninstall(Path gameDir)
+    {
+        ModLoaderUninstaller.uninstall(gameDir, "fabric-profile.json", "fabric");
+    }
+
+    /**
      * Installs Fabric into the provided game directory.
      *
      * @param modloaderProfile The version of Fabric to install (e.g. "0.19.5")

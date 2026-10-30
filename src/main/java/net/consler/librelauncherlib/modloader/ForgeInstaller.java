@@ -26,6 +26,16 @@ import java.util.zip.ZipFile;
 public class ForgeInstaller
 {
     /**
+     * Removes Forge's profile, installed version, and libraries listed by the profile.
+     *
+     * @param gameDir the game directory containing the Forge installation
+     */
+    public static void uninstall(Path gameDir)
+    {
+        ModLoaderUninstaller.uninstall(gameDir, "forge-profile.json", "forge", "forge-installer.jar", "forge-installer.jar.part", "forge-installer.log");
+    }
+
+    /**
      * Installs Forge into the provided game directory.
      *
      * @param modloaderProfile The version of Forge to install (e.g. "26.2-65.1.3")
@@ -153,45 +163,55 @@ public class ForgeInstaller
     {
         Path launcherProfiles = gameDir.resolve("launcher_profiles.json");
         Path installerLog = gameDir.resolve("forge-installer.log");
-        Files.writeString(launcherProfiles, "{\"profiles\":{}}");
-        ProcessBuilder pb = new ProcessBuilder(
-                javaPath.toAbsolutePath().toString(),
-                "-jar",
-                installerPath.toAbsolutePath().toString(),
-                "--installClient",
-                gameDir.toAbsolutePath().toString()
-        );
-        pb.directory(gameDir.toFile());
-        pb.redirectErrorStream(true);
-        pb.redirectOutput(ProcessBuilder.Redirect.to(installerLog.toFile()));
-        Process process = pb.start();
-        if (!process.waitFor(15, TimeUnit.MINUTES))
+        boolean hadLauncherProfiles = Files.exists(launcherProfiles);
+        byte[] originalLauncherProfiles = hadLauncherProfiles ? Files.readAllBytes(launcherProfiles) : null;
+        try
         {
-            process.destroyForcibly();
-            throw new RuntimeException("Forge installer process timed out (see " + installerLog + ")");
-        }
-        int exitCode = process.exitValue();
-        if (exitCode != 0) throw new RuntimeException("Forge installer process failed with exit code: " + exitCode + " (see " + installerLog + ")");
-        Files.deleteIfExists(installerLog);
-
-
-        JsonObject profilesObj = JsonParser.parseString(Files.readString(launcherProfiles)).getAsJsonObject().getAsJsonObject("profiles");
-        String installedVersionId = null;
-        for (String key : profilesObj.keySet())
-        {
-            JsonObject prof = profilesObj.getAsJsonObject(key);
-            if (prof.has("lastVersionId"))
+            Files.writeString(launcherProfiles, "{\"profiles\":{}}");
+            ProcessBuilder pb = new ProcessBuilder(
+                    javaPath.toAbsolutePath().toString(),
+                    "-jar",
+                    installerPath.toAbsolutePath().toString(),
+                    "--installClient",
+                    gameDir.toAbsolutePath().toString()
+            );
+            pb.directory(gameDir.toFile());
+            pb.redirectErrorStream(true);
+            pb.redirectOutput(ProcessBuilder.Redirect.to(installerLog.toFile()));
+            Process process = pb.start();
+            if (!process.waitFor(15, TimeUnit.MINUTES))
             {
-                installedVersionId = prof.get("lastVersionId").getAsString();
-                break;
+                process.destroyForcibly();
+                throw new RuntimeException("Forge installer process timed out (see " + installerLog + ")");
             }
+            int exitCode = process.exitValue();
+            if (exitCode != 0) throw new RuntimeException("Forge installer process failed with exit code: " + exitCode + " (see " + installerLog + ")");
+            Files.deleteIfExists(installerLog);
+
+
+            JsonObject profilesObj = JsonParser.parseString(Files.readString(launcherProfiles)).getAsJsonObject().getAsJsonObject("profiles");
+            String installedVersionId = null;
+            for (String key : profilesObj.keySet())
+            {
+                JsonObject prof = profilesObj.getAsJsonObject(key);
+                if (prof.has("lastVersionId"))
+                {
+                    installedVersionId = prof.get("lastVersionId").getAsString();
+                    break;
+                }
+            }
+            if (installedVersionId == null) throw new RuntimeException("Forge installer did not create a launcher profile");
+
+            Path installedJson = gameDir.resolve("versions").resolve(installedVersionId).resolve(installedVersionId + ".json");
+            if (!Files.exists(installedJson)) throw new RuntimeException("Forge version json not found: " + installedJson);
+
+            Files.copy(installedJson, gameDir.resolve("forge-profile.json"), StandardCopyOption.REPLACE_EXISTING);
         }
-        if (installedVersionId == null) throw new RuntimeException("Forge installer did not create a launcher profile");
-
-        Path installedJson = gameDir.resolve("versions").resolve(installedVersionId).resolve(installedVersionId + ".json");
-        if (!Files.exists(installedJson)) throw new RuntimeException("Forge version json not found: " + installedJson);
-
-        Files.copy(installedJson, gameDir.resolve("forge-profile.json"), StandardCopyOption.REPLACE_EXISTING);
+        finally
+        {
+            if (hadLauncherProfiles) Files.write(launcherProfiles, originalLauncherProfiles);
+            else Files.deleteIfExists(launcherProfiles);
+        }
     }
 
     private static void deleteQuietly(Path path)

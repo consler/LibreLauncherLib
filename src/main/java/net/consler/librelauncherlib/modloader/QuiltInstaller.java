@@ -14,6 +14,16 @@ import java.nio.file.Path;
 public class QuiltInstaller
 {
     /**
+     * Removes Quilt's profile and the libraries listed by that profile.
+     *
+     * @param gameDir the game directory containing the Quilt installation
+     */
+    public static void uninstall(Path gameDir)
+    {
+        ModLoaderUninstaller.uninstall(gameDir, "quilt-profile.json", "quilt");
+    }
+
+    /**
      * Installs Quilt into the provided game directory.
      *
      * @param modloaderProfile The version of Quilt to install (e.g. "0.25.0")
