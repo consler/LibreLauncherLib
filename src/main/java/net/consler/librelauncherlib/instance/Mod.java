@@ -40,6 +40,7 @@ public class Mod
     private final List<String> authors = new ArrayList<>();
     private String iconPath = null;
     private BufferedImage icon = null;
+    private final File modFile;
 
     public Mod(Path modPath)
     {
@@ -48,6 +49,7 @@ public class Mod
 
     public Mod(File modFile)
     {
+        this.modFile = modFile;
         this.name = modFile.getName();
 
         try (JarFile jar = new JarFile(modFile))
@@ -506,5 +508,10 @@ public class Mod
     public boolean hasIcon()
     {
         return icon != null;
+    }
+
+    public File getModFile()
+    {
+        return modFile;
     }
 }

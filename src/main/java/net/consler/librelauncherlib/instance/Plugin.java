@@ -4,9 +4,14 @@ import java.io.File;
 
 public class Plugin
 {
-    public File pluginFile;
+    private final File pluginFile;
     public Plugin(File pluginFile)
     {
         this.pluginFile = pluginFile;
+    }
+
+    public File getFile()
+    {
+        return pluginFile;
     }
 }

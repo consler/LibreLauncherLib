@@ -28,6 +28,7 @@ public class Datapack
     private int[] maxFormat = null;
     private SupportedFormats supportedFormats = null;
     private BufferedImage icon = null;
+    private final Path packFile;
 
     public record SupportedFormats(int[] minInclusive, int[] maxInclusive)
     {
@@ -39,6 +40,7 @@ public class Datapack
      */
     public Datapack(Path packFile)
     {
+        this.packFile = packFile;
         this.name = packFile.getFileName().toString().replaceFirst("[.][^.]+$", "");
 
         try (InputStream in = Files.newInputStream(packFile);
@@ -206,5 +208,10 @@ public class Datapack
     public boolean hasIcon()
     {
         return icon != null;
+    }
+
+    public Path getFile()
+    {
+        return packFile;
     }
 }
