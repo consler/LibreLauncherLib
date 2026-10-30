@@ -171,6 +171,25 @@
                     <autoPublish>true</autoPublish>
                 </configuration>
             </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>license-maven-plugin</artifactId>
+                <version>2.7.1</version>
+                <executions>
+                    <execution>
+                        <id>generate-third-party-file</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>add-third-party</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <sortArtifactByName>true</sortArtifactByName>
+                    <includedScopes>compile,runtime,provided</includedScopes>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>
